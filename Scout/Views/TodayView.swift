@@ -18,6 +18,7 @@ struct TodayView: View {
     @State private var showsNewLane = false
     @State private var asking: AskSubject?
     @State private var threadBrief: ThreadBriefItem?
+    @State private var reading: ReaderItem?
 
     private var shortlistCount: Int { shortlisted.count + shortlistedStories.count }
     private var deckCount: Int { model.mode == .writers ? model.deck.count : model.storyDeck.count }
@@ -49,7 +50,8 @@ struct TodayView: View {
                                      onAsk: { asking = .writer(candidate) }, onThreadBrief: { threadBrief = ThreadBriefItem(id: $0) })
                     } else {
                     AuthorCard(candidate: candidate, why: model.whyLines[candidate.authorKey],
-                               stats: model.authorStats[candidate.authorKey], onAsk: { asking = .writer(candidate) })
+                               stats: model.authorStats[candidate.authorKey], onAsk: { asking = .writer(candidate) },
+                               onRead: { reading = ReaderItem(id: candidate.bestPost.guid, subject: .writer(candidate)) })
                         .contextMenu {
                             Button("Block \(candidate.name)", systemImage: "hand.raised", role: .destructive) { model.block(candidate) }
                         }
@@ -61,6 +63,7 @@ struct TodayView: View {
                 SwipeDeck(items: model.storyDeck, onDecide: { model.decideStory($0, $1) }) { story in
                     StoryCardView(story: story, laneTags: laneTags, why: model.storyWhyLines[story.id], imageFirst: visual,
                               avatarURL: model.avatars[story.post.authorKey], onAsk: { asking = .story(story) },
+                              onRead: { reading = ReaderItem(id: story.id, subject: .story(story)) },
                               onThreadBrief: { threadBrief = ThreadBriefItem(id: $0) })
                 }
             }
@@ -74,6 +77,7 @@ struct TodayView: View {
         .sheet(isPresented: $showsNewLane) { NewLaneView() }
         .sheet(item: $asking) { AskSheet(subject: $0) }
         .sheet(item: $threadBrief) { ThreadBriefView(storyID: $0.id) }
+        .sheet(item: $reading) { ReaderView(guid: $0.id, askSubject: $0.subject) }
         .onAppear { showsPackPicker = model.needsPackChoice }
         .task(id: model.deck.first?.id) { if let top = model.deck.first { await model.ensureStats(for: top) } }
     }
@@ -142,6 +146,11 @@ struct TodayView: View {
         .accessibilityIdentifier("today.lanePicker")
         .accessibilityLabel("Lane: \(model.activeLaneName), \(deckCount) cards")
     }
+}
+
+struct ReaderItem: Identifiable {
+    let id: String
+    let subject: AskSubject
 }
 
 struct ThreadBriefItem: Identifiable {

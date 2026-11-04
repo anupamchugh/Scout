@@ -113,6 +113,9 @@ enum Ingest {
                     post.categories = Array(Set(post.categories).union(item.categories)).sorted()
                     post.readingMinutes = post.readingMinutes ?? item.readingMinutes
                     post.hnID = post.hnID ?? HackerNewsLink.itemID(from: item.guid)
+                    if post.contentMarkdown == nil, let html = item.contentHTML {
+                        post.contentMarkdown = HTMLToMarkdown.convert(html, codeLanguage: HTMLToMarkdown.codeLanguage(forTags: post.categories))
+                    }
                     if let key = source.laneKey, !post.foundUnder.contains(key) { post.foundUnder.append(key) }
                 } else {
                     let post = StoredPost(
@@ -123,6 +126,9 @@ enum Ingest {
                         published: item.published, firstSeen: now, readingMinutes: item.readingMinutes,
                         imageURL: item.imageURL?.absoluteString)
                     post.hnID = HackerNewsLink.itemID(from: item.guid)
+                    post.contentMarkdown = item.contentHTML.map {
+                        HTMLToMarkdown.convert($0, codeLanguage: HTMLToMarkdown.codeLanguage(forTags: item.categories))
+                    }
                     context.insert(post)
                     byGuid[item.guid] = post
                     byLink[post.link] = post

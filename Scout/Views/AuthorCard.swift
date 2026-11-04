@@ -15,6 +15,8 @@ struct AuthorCard: View {
     var stats: AuthorStats?
     /// Opens the Ask sheet; nil hides the sparkles button.
     var onAsk: (() -> Void)?
+    /// Opens the reader on the best post.
+    var onRead: (() -> Void)?
 
     private var post: PostRecord { candidate.bestPost }
 
@@ -51,6 +53,9 @@ struct AuthorCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 MonoLabel("Best this week")
                 Text(post.title).font(.headline).foregroundStyle(Color.ink).lineLimit(3)
+                    .onTapGesture { onRead?() }
+                    .accessibilityAddTraits(onRead == nil ? [] : .isButton)
+                    .accessibilityIdentifier("card.title")
                 Text(meta).font(.caption).foregroundStyle(Color.inkSecondary)
             }
 

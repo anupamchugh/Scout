@@ -17,6 +17,8 @@ struct StoryCardView: View {
     var avatarURL: URL?
     /// Opens the Ask sheet; nil hides the sparkles button.
     var onAsk: (() -> Void)?
+    /// Opens the reader on a tap of the title.
+    var onRead: (() -> Void)?
     /// Opens a Hacker News thread brief for HN stories.
     var onThreadBrief: ((Int) -> Void)?
 
@@ -62,6 +64,10 @@ struct StoryCardView: View {
             }
             Text(post.title).font(imageFirst ? .title3.weight(.bold) : .title2.weight(.bold)).foregroundStyle(Color.ink)
                 .lineLimit(imageFirst ? 2 : 4)
+                .onTapGesture { onRead?() }
+                .accessibilityAddTraits(onRead == nil ? [] : .isButton)
+                .accessibilityHint(onRead == nil ? "" : "Opens the article")
+                .accessibilityIdentifier("card.title")
             if !post.snippet.isEmpty {
                 Text(post.snippet).font(.body).foregroundStyle(Color.inkSecondary).lineLimit(imageFirst ? 2 : 3)
             }

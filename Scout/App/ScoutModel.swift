@@ -458,6 +458,30 @@ final class ScoutModel {
         }
     }
 
+    /// The article's Markdown: stored from a full-text feed, or fetched from the writer's own Medium feed
+    /// (tag feeds carry only a snippet). Nil when no feed has the full text.
+    func article(for guid: String) async -> String? {
+        let id = guid
+        guard let post = try? context.fetch(FetchDescriptor<StoredPost>(predicate: #Predicate { $0.guid == id })).first else { return nil }
+        if let markdown = post.contentMarkdown { return markdown }
+        guard let source = Self.fullTextSource(for: post) else { return nil }
+        let report = await fetch([source])
+        _ = try? Ingest.upsert(report, into: context)
+        return post.contentMarkdown
+    }
+
+    /// Where a post's full text lives: the writer's Medium feed, the publication's Medium feed
+    /// (medium.com/<publication>/…), or /feed on a publication's own domain.
+    static func fullTextSource(for post: StoredPost) -> FeedSource? {
+        if let handle = post.handle { return .author(handle) }
+        guard post.hnID == nil, let url = URL(string: post.link), let host = url.host() else { return nil }
+        if host == "medium.com" {
+            let first = url.pathComponents.dropFirst().first ?? ""
+            return first.isEmpty || first.hasPrefix("@") ? nil : .publication(first)
+        }
+        return URL(string: "https://\(host)/feed").map(FeedSource.feed)
+    }
+
     /// Follows a writer by adding their own feed as a lane in the active pack. Returns false if already there.
     @discardableResult
     func followWriter(handle: String, name: String) -> Bool {

@@ -59,7 +59,7 @@ public enum FeedSource: Sendable, Hashable {
 /// One item from a Medium RSS feed, holding only what the feed states.
 public struct FeedItem: Sendable, Hashable {
     public init(guid: String, title: String, link: URL, creator: String, published: Date, categories: [String],
-                snippet: String, wordCount: Int? = nil, imageURL: URL? = nil) {
+                snippet: String, wordCount: Int? = nil, imageURL: URL? = nil, contentHTML: String? = nil) {
         self.guid = guid
         self.title = title
         self.link = link
@@ -69,6 +69,7 @@ public struct FeedItem: Sendable, Hashable {
         self.snippet = snippet
         self.wordCount = wordCount
         self.imageURL = imageURL
+        self.contentHTML = contentHTML
     }
 
     public var guid: String
@@ -81,6 +82,8 @@ public struct FeedItem: Sendable, Hashable {
     /// Words in `content:encoded`. Tag feeds carry only a snippet, so this is nil there.
     public var wordCount: Int?
     public var imageURL: URL?
+    /// The full article HTML from content:encoded, when the feed carries it.
+    public var contentHTML: String? = nil
 
     /// The `@handle` in the post link. Posts on a publication's custom domain have none.
     public var handle: String? {

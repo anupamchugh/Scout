@@ -31,6 +31,8 @@ final class StoredPost {
     var hnPoints: Int?
     var hnComments: Int?
     var hnBy: String?
+    /// The article as Markdown, converted from the feed's full text; shown only in the reader, never exported.
+    var contentMarkdown: String?
 
     init(guid: String, title: String, link: String, authorName: String, authorKey: String, handle: String?,
          snippet: String, categories: [String], foundUnder: [String], published: Date, firstSeen: Date,

@@ -165,4 +165,39 @@ final class ScreenshotTour: XCTestCase {
         sleep(10)
         shoot("15-hn-person")
     }
+
+    @MainActor
+    func testReader() throws {
+        try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")
+        let app = XCUIApplication()
+        app.launchArguments = ["-pack", "engineering-editor", "-lane", "Swift concurrency", "-stories"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["deck.card"].firstMatch.waitForExistence(timeout: 90))
+        // Find a story whose article has a code block: open, look, close, pass, up to six stories.
+        for _ in 0..<6 {
+            app.descendants(matching: .any)["card.title"].firstMatch.tap()
+            sleep(6)
+            if app.descendants(matching: .any)["reader.code"].firstMatch.exists || app.scrollViews.firstMatch.otherElements["reader.code"].exists {
+                shoot("17-reader")
+                let code = app.descendants(matching: .any)["reader.code"].firstMatch
+                for _ in 0..<12 where !code.isHittable { app.swipeUp() }
+                sleep(1)
+                shoot("17b-reader-code")
+                return
+            }
+            for _ in 0..<10 { app.swipeUp() }
+            if app.descendants(matching: .any)["reader.code"].firstMatch.exists {
+                shoot("17b-reader-code")
+                app.buttons["Done"].firstMatch.tap()
+                return
+            }
+            app.buttons["Done"].firstMatch.tap()
+            sleep(1)
+            app.buttons["deck.pass"].tap()
+            sleep(2)
+        }
+        app.descendants(matching: .any)["card.title"].firstMatch.tap()
+        sleep(6)
+        shoot("17-reader")
+    }
 }

@@ -138,7 +138,8 @@ public final class RSSParser: NSObject, XMLParserDelegate {
             categories: categories,
             snippet: snippet,
             wordCount: content.map { HTMLText.wordCount(HTMLText.plainText($0)) },
-            imageURL: image
+            imageURL: image,
+            contentHTML: content
         )
     }
 }

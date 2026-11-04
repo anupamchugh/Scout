@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		057F31985A28C6FE2BFA79CD /* ScriptedLanguageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7F8FEDCD8D1A021E300C4C /* ScriptedLanguageModel.swift */; };
 		0B6B026C554C6A4B8375164B /* TasteRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35375D59B2E02CE36ED1F2A /* TasteRecord.swift */; };
+		136CB7BFF1DF19FF6AE66B32 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4910000964058CE4E3769F34 /* ReaderView.swift */; };
 		14769CFD17472DA567AFA3FE /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5773F3DB5DC5D621BBAA0F30 /* DemoData.swift */; };
 		15A1DFBFCB97C151567683FF /* IssueAgents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE453DE8556FBD9AE47D3EA4 /* IssueAgents.swift */; };
 		1677402F75A3BF20B004D732 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2387BC66EF18AA4C9E5DDA /* TodayView.swift */; };
@@ -72,6 +73,7 @@
 		35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueEditorView.swift; sourceTree = "<group>"; };
 		363B6271F677B2FD69162CC0 /* SpotlightIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndex.swift; sourceTree = "<group>"; };
 		40896C5C3766C4916251E5A6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4910000964058CE4E3769F34 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderView.swift; sourceTree = "<group>"; };
 		4BA8DD89169184EB15751A65 /* ShortlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortlistView.swift; sourceTree = "<group>"; };
 		50D2AE96762B1F12FBD1158B /* HackerNewsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HackerNewsViews.swift; sourceTree = "<group>"; };
 		5773F3DB5DC5D621BBAA0F30 /* DemoData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoData.swift; sourceTree = "<group>"; };
@@ -198,6 +200,7 @@
 				7D20A83778EE6C524199B4E8 /* EvaluationsView.swift */,
 				50D2AE96762B1F12FBD1158B /* HackerNewsViews.swift */,
 				35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */,
+				4910000964058CE4E3769F34 /* ReaderView.swift */,
 				59E099988DC91DED97B18CA4 /* SearchView.swift */,
 				9A786F2CF4C0CE2A22F1BB73 /* SettingsView.swift */,
 				4BA8DD89169184EB15751A65 /* ShortlistView.swift */,
@@ -427,6 +430,7 @@
 				8F36BDFB1516628FB20FD5BA /* ModelRun.swift in Sources */,
 				E5EC4A17D745FB73F1FA7792 /* Models.swift in Sources */,
 				1BFC519A51F6D1959A1EEAF6 /* PitchReader.swift in Sources */,
+				136CB7BFF1DF19FF6AE66B32 /* ReaderView.swift in Sources */,
 				789D9C4759A6D29EDF2A7F11 /* ScoutApp.swift in Sources */,
 				DBB18FE2CAD673137B1F63A2 /* ScoutIntents.swift in Sources */,
 				DC4E987E09E75E73747E0E53 /* ScoutModel.swift in Sources */,
