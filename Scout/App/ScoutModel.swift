@@ -42,7 +42,8 @@ final class ScoutModel {
 
     var window: DeckWindow = .week
     private(set) var activePack: RolePack = PackStore.pack(id: PackStore.activeID)
-    var activeLaneName: String = PackStore.pack(id: PackStore.activeID).lanes.first?.name ?? ""
+    static let allLanes = "All my lanes"
+    var activeLaneName: String = ScoutModel.allLanes
     /// True until the person picks a role pack (onboarding).
     var needsPackChoice: Bool { PackStore.activeID == nil && !usesDemoData }
     var mode: DeckMode = {
@@ -56,6 +57,8 @@ final class ScoutModel {
     private(set) var storyDeck: [StoryCandidate] = []
     /// Tag pairs that keep appearing together in the window, offered as new lanes.
     private(set) var suggestedPairs: [(pair: TagPair, count: Int)] = []
+    /// Writers' avatars from their own feeds, by author key.
+    private(set) var avatars: [String: URL] = [:]
     /// Statistics from each writer's own feed, computed in code, by author key.
     private(set) var authorStats: [String: AuthorStats] = [:]
     /// "Why this story" lines that passed `TextGuard`, by post guid.
@@ -75,14 +78,12 @@ final class ScoutModel {
         // Demo data only covers Medium tags, so it starts on the Engineering pack whatever was saved.
         if usesDemoData {
             activePack = .engineering
-            activeLaneName = activePack.lanes.first?.name ?? ""
         }
         // -choosePack: show the onboarding pack picker again.
         if args.contains("-choosePack") { PackStore.activeID = nil }
         if let i = args.firstIndex(of: "-pack"), i + 1 < args.count {
             PackStore.activeID = args[i + 1]
             activePack = PackStore.pack(id: args[i + 1])
-            activeLaneName = activePack.lanes.first?.name ?? ""
         }
         #endif
         ScoutStore.seedIfNeeded(container.mainContext, pack: activePack)
@@ -96,7 +97,7 @@ final class ScoutModel {
         guard pack.id != activePack.id else { return }
         activePack = pack
         ScoutStore.seedLanes(for: pack, in: context)
-        activeLaneName = lanes.first?.name ?? ""
+        activeLaneName = Self.allLanes
         Writer.pack = pack
         deck = []
         storyDeck = []
@@ -108,7 +109,14 @@ final class ScoutModel {
                                                         sortBy: [SortDescriptor(\.position)]))) ?? []
     }
 
+    var isAllLanes: Bool { activeLaneName == Self.allLanes }
+
+    /// One lane, or with "All my lanes" every lane's sources and themes together (for filters and fetching).
     var activeLane: LaneSpec {
+        if isAllLanes {
+            let specs = laneSpecs
+            return LaneSpec(name: Self.allLanes, tags: Set(specs.flatMap(\.tags)), theme: specs.map(\.theme).joined(separator: ". "))
+        }
         let lane = lanes.first { $0.name == activeLaneName } ?? lanes.first
         return lane.map { LaneSpec(name: $0.name, tags: Set($0.tags), theme: $0.theme) }
             ?? LaneSpec(name: activeLaneName, tags: [], theme: activeLaneName)
@@ -118,13 +126,28 @@ final class ScoutModel {
         lanes.map { LaneSpec(name: $0.name, tags: Set($0.tags), theme: $0.theme) }
     }
 
+    /// The lanes a ranking scores against: all of the pack's lanes, or the chosen one.
+    private var rankingLanes: [LaneSpec] { isAllLanes ? laneSpecs : [activeLane] }
+
     func addLane(from pair: TagPair) {
-        let name = pair.label
-        guard !lanes.contains(where: { $0.name == name }) else { return }
-        context.insert(Lane(name: name, tags: [pair.first, pair.second], theme: "\(pair.first) and \(pair.second)",
+        addLane(name: pair.label, tags: [pair.first, pair.second], theme: "\(pair.first) and \(pair.second)")
+    }
+
+    func addLane(name: String, tags: [String], theme: String) {
+        let name = name.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, !tags.isEmpty, name != Self.allLanes,
+              (try? context.fetchCount(FetchDescriptor<Lane>(predicate: #Predicate { $0.name == name }))) == 0 else { return }
+        context.insert(Lane(name: name, tags: tags, theme: theme.isEmpty ? tags.joined(separator: ", ") : theme,
                             position: (lanes.map(\.position).max() ?? -1) + 1, packID: activePack.id))
         try? context.save()
         activeLaneName = name
+    }
+
+    /// Tags seen on posts in the window, most common first, for building a new lane.
+    var tagCloud: [(tag: String, count: Int)] {
+        let cutoff = Date.now.addingTimeInterval(-window.seconds)
+        let posts = (try? context.fetch(FetchDescriptor<StoredPost>(predicate: #Predicate { $0.published >= cutoff }))) ?? []
+        return Array(TagCooccurrence.tagCounts(posts.map(Self.record)).prefix(40))
     }
 
     // MARK: Deck
@@ -162,8 +185,10 @@ final class ScoutModel {
             guard !Task.isCancelled else { return }
         }
 
-        let avatars = Dictionary(((try? context.fetch(FetchDescriptor<AuthorInfo>())) ?? []).map { ($0.authorKey, $0.avatarURL) },
-                                 uniquingKeysWith: { first, _ in first })
+        avatars = Dictionary(((try? context.fetch(FetchDescriptor<AuthorInfo>())) ?? []).compactMap { info in
+            info.avatarURL.flatMap(URL.init(string:)).map { (info.authorKey, $0) }
+        }, uniquingKeysWith: { first, _ in first })
+        let avatars = avatars
         let stories = await rankStories(lane)
         guard !Task.isCancelled else { return }
 
@@ -174,7 +199,7 @@ final class ScoutModel {
         func fill(writerSimilarity: [String: Double], storySimilarity: [String: Double]) {
             deck = Matching.applyTaste(Array(candidates.prefix(40)), taste: taste, similarity: writerSimilarity).prefix(30).map { candidate in
                 var candidate = candidate
-                candidate.avatarURL = avatars[candidate.authorKey].flatMap { $0 }.flatMap(URL.init(string:))
+                candidate.avatarURL = avatars[candidate.authorKey]
                 return candidate
             }
             storyDeck = Array(Matching.applyTaste(Array(stories.prefix(60)), taste: taste, similarity: storySimilarity).prefix(40))
@@ -257,10 +282,15 @@ final class ScoutModel {
         let texts = Dictionary(records.filter { !excluded.contains($0.guid) }.map { ($0.guid, "\($0.title). \($0.snippet)") },
                                uniquingKeysWith: { first, _ in first })
         // Visual packs match on images (through taste), not text embeddings.
-        let semantic = activePack.isVisual ? [:] : await Embedder.similarities(texts, to: lane.theme)
         suggestedPairs = TagCooccurrence.suggestions(records, existing: laneSpecs.map(\.tags))
-        return Matching.stories(from: records, lane: lane, lanes: laneSpecs, semantic: semantic, excluding: excluded,
-                                now: now, window: window.seconds)
+        var lists: [[StoryCandidate]] = []
+        for spec in rankingLanes {
+            let semantic = activePack.isVisual ? [:] : await Embedder.similarities(texts, to: spec.theme)
+            if Task.isCancelled { return [] }
+            lists.append(Matching.stories(from: records, lane: spec, lanes: laneSpecs, semantic: semantic, excluding: excluded,
+                                          now: now, window: window.seconds))
+        }
+        return Matching.mixed(lists, id: \.id, score: \.score)
     }
 
     private func fetch(_ sources: [FeedSource]) async -> FeedClient.Report {
@@ -278,9 +308,14 @@ final class ScoutModel {
         let excluded = decidedOrBlocked()
         let texts = Dictionary(grouping: records.filter { !excluded.contains($0.authorKey) }, by: \.authorKey)
             .mapValues { $0.map { "\($0.title). \($0.snippet)" }.joined(separator: " ") }
-        let semantic = activePack.isVisual ? [:] : await Embedder.similarities(texts, to: lane.theme)
-        return Matching.candidates(from: records, lane: lane, semantic: semantic, excluding: excluded,
-                                   now: now, window: window.seconds)
+        var lists: [[AuthorCandidate]] = []
+        for spec in rankingLanes {
+            let semantic = activePack.isVisual ? [:] : await Embedder.similarities(texts, to: spec.theme)
+            if Task.isCancelled { return [] }
+            lists.append(Matching.candidates(from: records, lane: spec, semantic: semantic, excluding: excluded,
+                                             now: now, window: window.seconds))
+        }
+        return Matching.mixed(lists, id: \.authorKey, score: \.score)
     }
 
     static func record(_ post: StoredPost) -> PostRecord {
@@ -301,7 +336,7 @@ final class ScoutModel {
     func decide(_ candidate: AuthorCandidate, _ verdict: Verdict) {
         let post = candidate.bestPost
         context.insert(Decision(authorKey: candidate.authorKey, authorName: candidate.name, handle: candidate.handle,
-                                lane: activeLane.name, verdict: verdict, score: candidate.score,
+                                lane: candidate.lane.isEmpty ? activeLane.name : candidate.lane, verdict: verdict, score: candidate.score,
                                 bestPostGuid: post.guid, bestPostTitle: post.title, bestPostLink: post.link))
         if verdict == .issue, let issue = ScoutStore.currentIssue(context) {
             let entry = IssueEntry(position: (issue.entries.map(\.position).max() ?? -1) + 1, postGuid: post.guid,
@@ -320,7 +355,7 @@ final class ScoutModel {
         let post = story.post
         context.insert(StoryPick(guid: post.guid, title: post.title, link: post.link, authorKey: post.authorKey,
                                  authorName: post.authorName, handle: post.handle, tags: post.categories,
-                                 lane: activeLane.name, verdict: verdict, score: story.score))
+                                 lane: story.lane.isEmpty ? activeLane.name : story.lane, verdict: verdict, score: story.score))
         if verdict == .issue, let issue = ScoutStore.currentIssue(context),
            !issue.entries.contains(where: { $0.postGuid == post.guid }) {
             let entry = IssueEntry(position: (issue.entries.map(\.position).max() ?? -1) + 1, postGuid: post.guid,
@@ -404,12 +439,28 @@ final class ScoutModel {
         }
     }
 
+    /// Writers in today's deck whose text is closest to this writer's, by on-device embeddings. Code only.
+    func similarWriters(to authorKey: String, limit: Int = 3) async -> [(name: String, percent: Int)] {
+        let key = authorKey
+        let own = ((try? context.fetch(FetchDescriptor<StoredPost>(predicate: #Predicate { $0.authorKey == key }))) ?? [])
+            .map { "\($0.title). \($0.snippet)" }.joined(separator: " ")
+        guard let vector = Embedder.vector(own) else { return [] }
+        let others = Dictionary(deck.filter { $0.authorKey != authorKey }.map { ($0.authorKey, $0.sourceText) },
+                                uniquingKeysWith: { first, _ in first })
+        let names = Dictionary(deck.map { ($0.authorKey, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let similarity = await Embedder.similarities(others, toVector: vector)
+        return similarity.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+            .prefix(limit)
+            .map { (names[$0.key] ?? $0.key, Int(($0.value * 100).rounded())) }
+    }
+
     func draftNote(for decision: Decision) async -> String? {
         let guid = decision.bestPostGuid
         let snippet = (try? context.fetch(FetchDescriptor<StoredPost>(predicate: #Predicate { $0.guid == guid })).first?.snippet) ?? ""
         guard ModelAvailability.current.isAvailable else {
-            return Writer.templateNote(name: decision.authorName, title: decision.bestPostTitle, lane: decision.lane)
+            return OutreachCheck.template(title: decision.bestPostTitle, snippet: snippet, lane: decision.lane)
         }
-        return try? await Writer.outreach(title: decision.bestPostTitle, snippet: snippet, lane: decision.lane)
+        return (try? await Writer.outreach(title: decision.bestPostTitle, snippet: snippet, lane: decision.lane))
+            ?? OutreachCheck.template(title: decision.bestPostTitle, snippet: snippet, lane: decision.lane)
     }
 }

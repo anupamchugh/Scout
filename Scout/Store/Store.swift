@@ -9,7 +9,7 @@ import SwiftData
 
 enum ScoutStore {
     static let schema = Schema([StoredPost.self, AuthorInfo.self, Lane.self, Decision.self, StoryPick.self, BlockedAuthor.self,
-                                IssueDraft.self, IssueEntry.self, Pitch.self, TasteRecord.self])
+                                IssueDraft.self, IssueEntry.self, Pitch.self, TasteRecord.self, ModelRun.self])
 
     /// One store for the app and its App Intents.
     static let container: ModelContainer = make(inMemory: false)
@@ -31,14 +31,23 @@ enum ScoutStore {
         try? context.save()
     }
 
-    /// Adds a pack's lanes the first time the pack is used; edits to them are kept after that.
+    /// Adds a pack's built-in lanes that this install hasn't seeded before, so lanes added in an update
+    /// appear, while a lane the person deleted stays deleted.
     static func seedLanes(for pack: RolePack, in context: ModelContext) {
+        let key = "scout.seededLanes.\(pack.id)"
         let id = pack.id
-        guard (try? context.fetchCount(FetchDescriptor<Lane>(predicate: #Predicate { $0.packID == id }))) == 0 else { return }
+        let packLanes = (try? context.fetchCount(FetchDescriptor<Lane>(predicate: #Predicate { $0.packID == id }))) ?? 0
+        // The record lives in UserDefaults but lanes live in the store: a store without this pack's lanes
+        // (new, reset, or in memory for demo data) gets all of them.
+        var seeded = packLanes == 0 ? [] : Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
         let existing = Set(((try? context.fetch(FetchDescriptor<Lane>())) ?? []).map(\.name))
-        for (index, lane) in pack.lanes.enumerated() where !existing.contains(lane.name) {
+        // Installs from before this record existed: count lanes already present as seeded.
+        seeded.formUnion(existing.intersection(pack.lanes.map(\.name)))
+        for (index, lane) in pack.lanes.enumerated() where !seeded.contains(lane.name) && !existing.contains(lane.name) {
             context.insert(Lane(name: lane.name, tags: lane.sources, theme: lane.theme, position: index, packID: pack.id))
+            seeded.insert(lane.name)
         }
+        UserDefaults.standard.set(Array(seeded), forKey: key)
         try? context.save()
     }
 
@@ -59,9 +68,11 @@ enum ScoutStore {
 }
 
 enum Ingest {
-    /// The feed's creator, or for feeds without one (Hacker News) the site the link points to.
+    /// The feed's creator; without one, the @handle in the link; for feeds with neither (Hacker News),
+    /// the site the link points to. Never blank.
     static func author(_ item: FeedItem, _ source: FeedSource) -> String {
         if !item.creator.isEmpty { return item.creator }
+        if let handle = item.handle { return "@\(handle)" }
         return item.link.host()?.replacingOccurrences(of: "www.", with: "") ?? source.label
     }
 

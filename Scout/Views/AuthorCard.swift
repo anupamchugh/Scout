@@ -13,32 +13,39 @@ struct AuthorCard: View {
     let why: String?
     /// From the writer's own feed, computed in code.
     var stats: AuthorStats?
+    /// Opens the Ask sheet; nil hides the sparkles button.
+    var onAsk: (() -> Void)?
 
     private var post: PostRecord { candidate.bestPost }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Avatar(name: candidate.name, url: candidate.avatarURL)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(candidate.name).font(.title3.weight(.semibold)).foregroundStyle(Color.ink)
-                    if let handle = candidate.handle {
-                        Text("@\(handle)").font(.subheadline).foregroundStyle(Color.inkSecondary)
-                    }
-                }
+            HStack(alignment: .top) {
+                Avatar(name: candidate.name, url: candidate.avatarURL, size: 64)
                 Spacer(minLength: 0)
+                if let onAsk { AskButton(action: onAsk) }
                 VStack(spacing: 0) {
                     Text("\(candidate.score)").font(.title3.monospacedDigit().weight(.semibold)).foregroundStyle(Color.scoutGreen)
                     MonoLabel("match")
                 }
                 .accessibilityElement(children: .combine)
             }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(candidate.name).font(.title2.weight(.bold)).foregroundStyle(Color.ink).lineLimit(2)
+                if let handle = candidate.handle {
+                    Text("@\(handle)").font(.callout).foregroundStyle(Color.inkSecondary)
+                }
+            }
+            .accessibilityElement(children: .combine)
 
             if !post.snippet.isEmpty {
-                Text(post.snippet)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.inkSecondary)
-                    .lineLimit(3)
+                VStack(alignment: .leading, spacing: 4) {
+                    MonoLabel("From their latest post")
+                    Text(post.snippet)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.inkSecondary)
+                        .lineLimit(3)
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {

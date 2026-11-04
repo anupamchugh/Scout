@@ -85,7 +85,7 @@ extension Matching {
 extension AuthorCandidate {
     public func withScore(_ score: Int) -> AuthorCandidate {
         var copy = AuthorCandidate(authorKey: authorKey, name: name, handle: handle, bestPost: bestPost, posts: posts,
-                                   topics: topics, signals: signals, score: score)
+                                   topics: topics, signals: signals, score: score, lane: lane)
         copy.avatarURL = avatarURL
         return copy
     }
@@ -93,6 +93,7 @@ extension AuthorCandidate {
 
 extension StoryCandidate {
     public func withScore(_ score: Int) -> StoryCandidate {
-        StoryCandidate(post: post, lanesSurfacing: lanesSurfacing, overlapCount: overlapCount, semantic: semantic, score: score)
+        StoryCandidate(post: post, lanesSurfacing: lanesSurfacing, overlapCount: overlapCount, semantic: semantic, score: score,
+                       lane: lane)
     }
 }

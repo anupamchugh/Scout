@@ -79,6 +79,23 @@ extension MatchingTests {
     }
 }
 
+extension MatchingTests {
+    @Test func allLanesKeepsEachItemsBestLaneScore() {
+        let swiftLane = LaneSpec(name: "Swift", tags: ["swift"], theme: "")
+        let aiLane = LaneSpec(name: "AI", tags: ["llm"], theme: "")
+        let posts = [post("1", "swifty", tags: ["swift"], hoursAgo: 1), post("2", "ai", tags: ["llm"], hoursAgo: 1),
+                     post("3", "both", tags: ["swift", "llm"], hoursAgo: 1)]
+        let lists = [swiftLane, aiLane].map {
+            Matching.stories(from: posts, lane: $0, lanes: [swiftLane, aiLane], semantic: [:], excluding: [], now: now, window: 86_400)
+        }
+        let mixed = Matching.mixed(lists, id: \.id, score: \.score)
+        #expect(mixed.count == 3)
+        #expect(mixed.first { $0.id == "2" }?.lane == "AI")
+        #expect(mixed.first { $0.id == "1" }?.lane == "Swift")
+        #expect(mixed.map(\.score) == mixed.map(\.score).sorted(by: >))
+    }
+}
+
 struct TextGuardTests {
     @Test func modelTextMayNotContainDigitsOrLinks() {
         #expect(TextGuard.isClean("Writes clearly about actor isolation."))

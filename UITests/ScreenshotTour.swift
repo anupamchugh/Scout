@@ -35,7 +35,25 @@ final class ScreenshotTour: XCTestCase {
         app.segmentedControls["today.mode"].buttons["Stories"].tap()
         sleep(6)
         shoot("01b-today-stories")
+
+        app.buttons["today.lanePicker"].tap()
+        sleep(1)
+        shoot("12-lane-menu")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.55)).tap()
+        sleep(1)
+
         app.segmentedControls["today.mode"].buttons["Writers"].tap()
+        sleep(1)
+        app.buttons["card.ask"].firstMatch.tap()
+        let why = app.buttons["ask.chip.Why this writer?"]
+        if why.waitForExistence(timeout: 5) {
+            why.tap()
+            _ = app.staticTexts["On-device model"].waitForExistence(timeout: 45)
+        }
+        app.buttons["ask.chip.What else did they write?"].tap()
+        sleep(2)
+        shoot("13-ask-sheet")
+        app.buttons["Done"].firstMatch.tap()
         sleep(1)
 
         card.swipeRight()

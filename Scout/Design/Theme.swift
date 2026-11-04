@@ -123,3 +123,20 @@ struct FlowLayout: Layout {
         return rows
     }
 }
+
+/// The Apple Intelligence entry point on cards, the issue editor and (later) the reader.
+struct AskButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "sparkles")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.scoutGreen)
+                .frame(width: 36, height: 36)
+        }
+        .glassEffect(.regular.interactive(), in: .circle)
+        .accessibilityLabel("Ask Apple Intelligence")
+        .accessibilityIdentifier("card.ask")
+    }
+}

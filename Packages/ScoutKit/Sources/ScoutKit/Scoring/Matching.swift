@@ -99,6 +99,8 @@ public struct AuthorCandidate: Identifiable, Sendable, Hashable {
     public let signals: MatchSignals
     public let score: Int
     public var avatarURL: URL?
+    /// The lane this score was computed for; with "All my lanes", the lane that scored highest.
+    public var lane: String = ""
 
     public var latest: Date { posts.map(\.published).max() ?? bestPost.published }
 
@@ -117,6 +119,8 @@ public struct StoryCandidate: Identifiable, Sendable, Hashable {
     public let overlapCount: Int
     public let semantic: Double
     public let score: Int
+    /// The lane this score was computed for; with "All my lanes", the lane that scored highest.
+    public var lane: String = ""
 }
 
 public struct StoryWeights: Sendable, Hashable, Codable {
@@ -152,7 +156,7 @@ public enum Matching {
                     + weights.surfaced * min(1, Double(surfacing) / Double(max(1, min(3, lanes.count))))
                     + weights.recency * recency(hours: now.timeIntervalSince(post.published) / 3600)
                 return StoryCandidate(post: post, lanesSurfacing: surfacing, overlapCount: shared, semantic: similarity,
-                                      score: total > 0 ? Int((value / total * 100).rounded()) : 0)
+                                      score: total > 0 ? Int((value / total * 100).rounded()) : 0, lane: lane.name)
             }
             .sorted {
                 if $0.score != $1.score { return $0.score > $1.score }
@@ -201,6 +205,25 @@ public enum Matching {
         return counts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.prefix(limit).map(\.key)
     }
 
+    /// "All my lanes": each item keeps its best score across lanes (and that lane), highest first.
+    /// Ties keep the order of the first list that had the item.
+    public static func mixed<Item>(_ lists: [[Item]], id: (Item) -> String, score: (Item) -> Int) -> [Item] {
+        var best: [String: (order: Int, item: Item)] = [:]
+        var order = 0
+        for list in lists {
+            for item in list {
+                let key = id(item)
+                if let current = best[key] {
+                    if score(item) > score(current.item) { best[key] = (current.order, item) }
+                } else {
+                    best[key] = (order, item)
+                    order += 1
+                }
+            }
+        }
+        return best.values.sorted { score($0.item) != score($1.item) ? score($0.item) > score($1.item) : $0.order < $1.order }.map(\.item)
+    }
+
     /// A post on a publication's own domain has no @handle, so its author key is `name:<creator>`.
     /// When exactly one handle is known for that name, file the post under the handle.
     public static func unifyAuthors(_ posts: [PostRecord]) -> [PostRecord] {
@@ -232,7 +255,7 @@ public enum Matching {
                 hoursSinceLatest: now.timeIntervalSince(sorted[0].published) / 3600)
             return AuthorCandidate(authorKey: key, name: best.authorName, handle: best.handle, bestPost: best,
                                    posts: sorted, topics: topTopics(posts), signals: signals,
-                                   score: score(signals, weights: weights))
+                                   score: score(signals, weights: weights), lane: lane.name)
         }
         .sorted {
             if $0.score != $1.score { return $0.score > $1.score }
