@@ -138,8 +138,9 @@ struct SettingsView: View {
                     }
                     Text("On this device, Apple Intelligence writes the “why” lines, outreach and issue drafts, and answers in Ask. It reads only feed text and what Scout stored, through tools that return your data. Code decides every score, count, link and order, and hides any answer with numbers or links that aren't in your data.")
                         .font(.footnote).foregroundStyle(Color.inkSecondary)
-                    Text("Private Cloud Compute is off. A later version will offer it as an opt-in for longer drafts.")
+                    Text("Private Cloud Compute is off: it needs an entitlement this build doesn't have. Everything runs on device.")
                         .font(.footnote).foregroundStyle(Color.inkSecondary)
+                    NavigationLink("Evaluations") { EvaluationsView() }
                 } header: { MonoLabel("Apple Intelligence") }
 
                 Section {

@@ -105,11 +105,8 @@ public struct FeedItem: Sendable, Hashable {
 public struct FeedDocument: Sendable, Hashable {
 
     public init(channelImage: URL?, items: [FeedItem]) {
-
         self.channelImage = channelImage
-
         self.items = items
-
     }
 
     public var channelImage: URL?

@@ -71,8 +71,22 @@ final class ScreenshotTour: XCTestCase {
         shoot("03-shortlist")
 
         app.buttons["shortlist.openIssue"].firstMatch.tap()
-        sleep(6)
+        sleep(4)
+        let agents = app.buttons["issue.agents"]
+        if agents.waitForExistence(timeout: 5) && agents.isEnabled {
+            agents.tap()
+            let done = NSPredicate(format: "label == %@", "Draft with agents")
+            expectation(for: done, evaluatedWith: agents)
+            waitForExpectations(timeout: 240)
+            sleep(2)
+        }
         shoot("04-issue-editor")
+        app.swipeUp()
+        sleep(1)
+        shoot("04b-issue-agents")
+        app.swipeUp()
+        sleep(1)
+        shoot("04c-issue-spotlight")
         app.buttons["issue.preview"].tap()
         sleep(2)
         shoot("05-issue-preview")
@@ -124,5 +138,31 @@ final class ScreenshotTour: XCTestCase {
         app.buttons["today.packChip"].tap()
         sleep(2)
         shoot("11-settings-pack-taste")
+    }
+
+    @MainActor
+    func testHackerNews() throws {
+        try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")
+        let app = XCUIApplication()
+        app.launchArguments = ["-pack", "engineering-editor", "-lane", "Show HN builders", "-stories"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["deck.card"].firstMatch.waitForExistence(timeout: 90))
+        sleep(6)
+        shoot("14-hn-story")
+
+        let brief = app.buttons["hn.threadBrief"].firstMatch
+        if brief.waitForExistence(timeout: 5) {
+            brief.tap()
+            _ = app.staticTexts["Arguments in the comments"].waitForExistence(timeout: 240)
+            sleep(1)
+            shoot("16-thread-brief")
+            app.buttons["Done"].firstMatch.tap()
+            sleep(1)
+        }
+
+        app.segmentedControls["today.mode"].buttons["Writers"].tap()
+        XCTAssertTrue(app.otherElements["deck.card"].firstMatch.waitForExistence(timeout: 30))
+        sleep(10)
+        shoot("15-hn-person")
     }
 }

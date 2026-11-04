@@ -24,7 +24,7 @@ public struct LaneSpec: Sendable, Hashable {
 public struct PostRecord: Sendable, Hashable {
     public init(guid: String, title: String, link: String, snippet: String, authorKey: String, authorName: String,
                 handle: String?, categories: [String], foundUnder: [String], published: Date, readingMinutes: Int?,
-                imageURL: String? = nil) {
+                imageURL: String? = nil, hnID: Int? = nil, hnPoints: Int? = nil, hnComments: Int? = nil) {
         self.guid = guid
         self.title = title
         self.link = link
@@ -37,6 +37,9 @@ public struct PostRecord: Sendable, Hashable {
         self.published = published
         self.readingMinutes = readingMinutes
         self.imageURL = imageURL
+        self.hnID = hnID
+        self.hnPoints = hnPoints
+        self.hnComments = hnComments
     }
 
     public var guid: String
@@ -51,6 +54,13 @@ public struct PostRecord: Sendable, Hashable {
     public var published: Date
     public var readingMinutes: Int?
     public var imageURL: String? = nil
+    /// Hacker News item facts from the official API, for HN stories.
+    public var hnID: Int? = nil
+    public var hnPoints: Int? = nil
+    public var hnComments: Int? = nil
+
+    public var isHackerNews: Bool { hnID != nil }
+    public var domain: String? { URL(string: link)?.host()?.replacingOccurrences(of: "www.", with: "") }
 
     public var topics: Set<String> { Set(categories).union(foundUnder) }
 }
@@ -58,15 +68,10 @@ public struct PostRecord: Sendable, Hashable {
 public struct MatchSignals: Sendable, Hashable {
 
     public init(semantic: Double, overlap: Double, postsInWindow: Int, hoursSinceLatest: Double) {
-
         self.semantic = semantic
-
         self.overlap = overlap
-
         self.postsInWindow = postsInWindow
-
         self.hoursSinceLatest = hoursSinceLatest
-
     }
 
     /// Cosine similarity of the writer's text to the lane theme, clamped to 0...1.

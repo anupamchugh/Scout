@@ -22,13 +22,17 @@ enum ScoutMode: String, Sendable, CaseIterable {
     case pitchReading
     /// The Ask sheet: the editor's own questions about a writer or story.
     case asking
+    /// Newsletter agents: arrange stories, blurb each one, feature a writer, title the issue.
+    case curator, blurber, spotlight, editor
 
     /// Low temperature where the text must stay close to the feed; a little more room for prose.
     var options: GenerationOptions {
         switch self {
+        case .curator: GenerationOptions(samplingMode: .greedy)
         case .scouting, .pitchReading: GenerationOptions(temperature: 0.3)
-        case .asking: GenerationOptions(temperature: 0.4)
-        case .issueWriting: GenerationOptions(temperature: 0.6)
+        case .asking, .blurber: GenerationOptions(temperature: 0.4)
+        case .spotlight: GenerationOptions(temperature: 0.5)
+        case .issueWriting, .editor: GenerationOptions(temperature: 0.6)
         }
     }
 }
@@ -48,6 +52,17 @@ final class ToolCallLog {
     }
 
     private(set) var entries: [Entry] = []
+    /// Tool calls that returned nothing, by "mode/tool": a hint that a tool is missing data.
+    private(set) var emptyOutputs: [String: Int] = [:]
+
+    func recordOutput(tool: String, mode: ScoutMode, empty: Bool) {
+        if empty { emptyOutputs["\(mode.rawValue)/\(tool)", default: 0] += 1 }
+    }
+
+    nonisolated static func looksEmpty(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        return lower.isEmpty || lower.hasPrefix("no stored") || lower.hasPrefix("nothing stored") || lower.contains("isn't stored")
+    }
 
     func record(tool: String, mode: ScoutMode, pack: String) {
         entries.insert(Entry(tool: tool, mode: mode, pack: pack, at: .now), at: 0)
@@ -63,10 +78,21 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
     var authorKey: String?
     /// The story an asking request is about, for the snippet tool.
     var storyGuid: String?
+    /// Nil is the system model; tests supply a scripted one.
+    var languageModel: (any LanguageModel)?
 
     static let historyLimit = 4
 
     var body: some LanguageModelSession.DynamicProfile {
+        if let languageModel {
+            branch.model(languageModel)
+        } else {
+            branch.model(SystemLanguageModel.default)
+        }
+    }
+
+    @LanguageModelSession.DynamicProfileBuilder
+    private var branch: some LanguageModelSession.DynamicProfile {
         let packName = pack.name
         let mode = mode
         LanguageModelSession.Profile {
@@ -78,6 +104,12 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
             if mode == .scouting && pack.isVisual {
                 ImageNotesTool(container: container)
             }
+            if mode == .blurber, let storyGuid {
+                StorySnippetTool(guid: storyGuid, container: container)
+            }
+            if mode == .spotlight, let authorKey {
+                RecentPostsTool(authorKey: authorKey, container: container)
+            }
             if mode == .asking {
                 if let authorKey { RecentPostsTool(authorKey: authorKey, container: container) }
                 if let storyGuid { StorySnippetTool(guid: storyGuid, container: container) }
@@ -87,6 +119,14 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
         .onToolCall { call in
             let name = call.toolName
             await MainActor.run { ToolCallLog.shared.record(tool: name, mode: mode, pack: packName) }
+        }
+        .onToolOutput { call, output in
+            let name = call.toolName
+            let text = output.segments.compactMap { segment -> String? in
+                if case .text(let text) = segment { return text.content }
+                return nil
+            }.joined()
+            await MainActor.run { ToolCallLog.shared.recordOutput(tool: name, mode: mode, empty: ToolCallLog.looksEmpty(text)) }
         }
         .historyTransform { Self.shortHistory($0) }
     }
@@ -103,6 +143,14 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
             "You are drafting a moodboard caption for the \(pack.name) role. Speak about the works, not the people. \(pack.outreachStyle)"
         case (.pitchReading, _):
             "You are reading a pitch sent to the \(pack.name) role. Summarise only what the pitch proposes."
+        case (.curator, _):
+            "You arrange a short newsletter for the \(pack.name) role. Group the given stories into two to four sections by their lanes. Use only the story IDs provided. Do not write any other text."
+        case (.blurber, _):
+            "You write one or two plain sentences telling readers why a story is worth their time, using only its feed text and storySnippet. No numbers, no links, no names that aren't in the story."
+        case (.spotlight, _):
+            "You introduce a writer for a newsletter spotlight in two sentences, using only their own posts, and write three interview questions. Each question must name one of their post titles exactly. Never describe the person beyond what their posts say; use their name or they/them."
+        case (.editor, _):
+            "You title a newsletter issue and write an intro of at most sixty words from its sections and blurbs. No numbers, no links, no hype."
         case (.asking, _):
             "Answer the editor's question for the \(pack.name) role in at most three plain sentences, using only the feed text in the prompt and what recentPosts, storySnippet and searchSaved return. If that data can't answer the question, say what is missing instead of guessing."
         }

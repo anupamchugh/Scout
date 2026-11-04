@@ -26,6 +26,11 @@ final class StoredPost {
     /// Known only from feeds with full text (author and publication feeds).
     var readingMinutes: Int?
     var imageURL: String?
+    /// Hacker News facts from the official API, for posts from HN feeds.
+    var hnID: Int?
+    var hnPoints: Int?
+    var hnComments: Int?
+    var hnBy: String?
 
     init(guid: String, title: String, link: String, authorName: String, authorKey: String, handle: String?,
          snippet: String, categories: [String], foundUnder: [String], published: Date, firstSeen: Date,
@@ -181,6 +186,13 @@ final class IssueDraft {
     var intro: String
     var created: Date
     @Relationship(deleteRule: .cascade, inverse: \IssueEntry.issue) var entries: [IssueEntry] = []
+    // The Spotlight agent's block, after the Checker.
+    var spotlightName: String?
+    var spotlightHandle: String?
+    var spotlightIntro: String = ""
+    var spotlightQuestions: [String] = []
+    /// What the Checker replaced or dropped in the title, intro and Spotlight.
+    var agentFlags: [String] = []
 
     init(number: Int, title: String, intro: String = "", created: Date = .now) {
         self.number = number
@@ -202,6 +214,10 @@ final class IssueEntry {
     var authorName: String
     var handle: String?
     var note: String
+    /// The Curator's section (a lane); empty until the agents run.
+    var section: String = ""
+    /// Why the Checker replaced this entry's blurb, if it did.
+    var flag: String?
     /// From LinkPresentation; nil until fetched or when the fetch fails (then the RSS title is used).
     var previewTitle: String?
     @Attribute(.externalStorage) var previewImage: Data?

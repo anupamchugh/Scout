@@ -12,26 +12,23 @@ import UniformTypeIdentifiers
 
 public struct IssueContent: Sendable, Hashable {
 
-    public init(number: Int, title: String, intro: String, entries: [Entry]) {
-
+    public init(number: Int, title: String, intro: String, entries: [Entry], spotlight: SpotlightBlock? = nil) {
         self.number = number
-
         self.title = title
-
         self.intro = intro
-
         self.entries = entries
-
+        self.spotlight = spotlight
     }
 
     public struct Entry: Sendable, Hashable {
 
-        public init(title: String, url: String, author: String, handle: String?, note: String) {
+        public init(title: String, url: String, author: String, handle: String?, note: String, section: String = "") {
             self.title = title
             self.url = url
             self.author = author
             self.handle = handle
             self.note = note
+            self.section = section
         }
 
         public var title: String
@@ -39,12 +36,26 @@ public struct IssueContent: Sendable, Hashable {
         public var author: String
         public var handle: String?
         public var note: String
+        /// The Curator's section (a lane); empty when the issue isn't sectioned.
+        public var section: String = ""
     }
 
     public var number: Int
     public var title: String
     public var intro: String
     public var entries: [Entry]
+    public var spotlight: SpotlightBlock?
+
+    /// Entries grouped by section in order of first appearance; one unnamed group when unsectioned.
+    public var sections: [(name: String, entries: [Entry])] {
+        var order: [String] = []
+        var groups: [String: [Entry]] = [:]
+        for entry in entries {
+            if groups[entry.section] == nil { order.append(entry.section) }
+            groups[entry.section, default: []].append(entry)
+        }
+        return order.map { ($0, groups[$0]!) }
+    }
 
     public var heading: String { "Issue \(number): \(title)" }
 }
@@ -54,11 +65,23 @@ public enum IssueRenderer {
     public static func markdown(_ issue: IssueContent) -> String {
         var lines = ["## \(issue.heading)", ""]
         if !issue.intro.isEmpty { lines += [issue.intro, ""] }
-        for entry in issue.entries {
-            var line = "- [\(markdownEscape(entry.title))](\(entry.url)) by \(entry.author)"
-            if let handle = entry.handle { line += " (@\(handle))" }
-            if !entry.note.isEmpty { line += ": \(entry.note)" }
-            lines.append(line)
+        for (index, section) in issue.sections.enumerated() {
+            if !section.name.isEmpty {
+                if index > 0 { lines.append("") }
+                lines += ["### \(section.name)", ""]
+            }
+            for entry in section.entries {
+                var line = "- [\(markdownEscape(entry.title))](\(entry.url)) by \(entry.author)"
+                if let handle = entry.handle { line += " (@\(handle))" }
+                if !entry.note.isEmpty { line += ": \(entry.note)" }
+                lines.append(line)
+            }
+        }
+        if let spotlight = issue.spotlight {
+            let who = spotlight.handle.map { "\(spotlight.name) (@\($0))" } ?? spotlight.name
+            lines += ["", "### Writer spotlight: \(who)", ""]
+            if !spotlight.intro.isEmpty { lines += [spotlight.intro, ""] }
+            lines += spotlight.questions.map { "- \($0)" }
         }
         return lines.joined(separator: "\n") + "\n"
     }
@@ -66,14 +89,24 @@ public enum IssueRenderer {
     public static func html(_ issue: IssueContent) -> String {
         var html = "<h2>\(escape(issue.heading))</h2>\n"
         if !issue.intro.isEmpty { html += "<p>\(escape(issue.intro))</p>\n" }
-        html += "<ul>\n"
-        for entry in issue.entries {
-            html += "<li><a href=\"\(escape(entry.url))\">\(escape(entry.title))</a> by \(escape(entry.author))"
-            if let handle = entry.handle { html += " (@\(escape(handle)))" }
-            if !entry.note.isEmpty { html += ": \(escape(entry.note))" }
-            html += "</li>\n"
+        for section in issue.sections {
+            if !section.name.isEmpty { html += "<h3>\(escape(section.name))</h3>\n" }
+            html += "<ul>\n"
+            for entry in section.entries {
+                html += "<li><a href=\"\(escape(entry.url))\">\(escape(entry.title))</a> by \(escape(entry.author))"
+                if let handle = entry.handle { html += " (@\(escape(handle)))" }
+                if !entry.note.isEmpty { html += ": \(escape(entry.note))" }
+                html += "</li>\n"
+            }
+            html += "</ul>\n"
         }
-        return html + "</ul>\n"
+        if let spotlight = issue.spotlight {
+            let who = spotlight.handle.map { "\(spotlight.name) (@\($0))" } ?? spotlight.name
+            html += "<h3>Writer spotlight: \(escape(who))</h3>\n"
+            if !spotlight.intro.isEmpty { html += "<p>\(escape(spotlight.intro))</p>\n" }
+            html += "<ul>\n" + spotlight.questions.map { "<li>\(escape($0))</li>\n" }.joined() + "</ul>\n"
+        }
+        return html
     }
 
     /// An llms.txt describing the issue: title, a `>` summary, then one link per entry.

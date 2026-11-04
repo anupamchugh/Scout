@@ -10,42 +10,76 @@ import SwiftUI
 struct IssueEditorView: View {
     @Bindable var issue: IssueDraft
     @Environment(\.modelContext) private var context
-    @State private var isDraftingIntro = false
     @State private var showsPreview = false
     @State private var copied = false
+    @State private var agents = IssueAgents()
+    @Environment(ScoutModel.self) private var model
 
-    private var content: IssueContent {
-        IssueContent(number: issue.number, title: issue.title, intro: issue.intro,
-                     entries: issue.orderedEntries.map {
-                         .init(title: $0.title, url: $0.link, author: $0.authorName, handle: $0.handle, note: $0.note)
-                     })
+    private var content: IssueContent { issue.content }
+
+    /// Entries grouped by the Curator's sections, in order; one group before the agents run.
+    private var groups: [(name: String, entries: [IssueEntry])] {
+        var order: [String] = []
+        var byName: [String: [IssueEntry]] = [:]
+        for entry in issue.orderedEntries {
+            if byName[entry.section] == nil { order.append(entry.section) }
+            byName[entry.section, default: []].append(entry)
+        }
+        return order.map { ($0, byName[$0]!) }
     }
 
     var body: some View {
         List {
             Section {
+                agentPanel
+            } header: { MonoLabel("Agents · on device") }
+
+            Section {
                 TextField("Issue title", text: $issue.title).font(.title3.weight(.semibold))
                 Stepper("Issue \(issue.number)", value: $issue.number, in: 1...999)
-            } header: { MonoLabel("Issue") }
+            } header: { MonoLabel("Issue · Editor's title") }
 
             Section {
                 TextField("A short intro for readers", text: $issue.intro, axis: .vertical).lineLimit(2...8)
-                if ModelAvailability.current.isAvailable {
-                    Button(isDraftingIntro ? "Drafting…" : "Draft intro on device", systemImage: "sparkles") {
-                        Task { await draftIntro() }
+                if ModelAvailability.current.isAvailable && !issue.intro.isEmpty {
+                    FlowLayout(spacing: 6) {
+                        ForEach(["Shorter", "More technical", "Plainer"], id: \.self) { chip in
+                            Button(chip) { Task { await agents.followUp(chip, issue: issue, in: context) } }
+                                .buttonStyle(.bordered).controlSize(.small)
+                                .disabled(agents.isRunning)
+                        }
                     }
-                    .disabled(isDraftingIntro || issue.entries.isEmpty)
                 }
-            } header: { MonoLabel("Intro") }
+            } header: { MonoLabel("Intro · Editor") }
 
-            Section {
-                ForEach(issue.orderedEntries) { IssueEntryRow(entry: $0) }
-                    .onMove(perform: move)
-                    .onDelete(perform: delete)
-            } header: {
-                MonoLabel("Entries · drag to reorder")
-            } footer: {
-                if issue.entries.isEmpty { Text("Swipe a writer up in Today to add their best post here.") }
+            if !issue.agentFlags.isEmpty {
+                Section {
+                    ForEach(issue.agentFlags, id: \.self) { Label($0, systemImage: "exclamationmark.triangle").font(.footnote) }
+                        .foregroundStyle(.orange)
+                } header: { MonoLabel("Checker") }
+            }
+
+            ForEach(groups, id: \.name) { group in
+                Section {
+                    ForEach(group.entries) { IssueEntryRow(entry: $0) }
+                        .onMove { move($0, $1, in: group.entries) }
+                        .onDelete { delete($0, in: group.entries) }
+                } header: {
+                    MonoLabel(group.name.isEmpty ? "Entries · drag to reorder" : group.name)
+                } footer: {
+                    if issue.entries.isEmpty { Text("Swipe a writer or story up in Today to add it here.") }
+                }
+            }
+
+            if let name = issue.spotlightName, !issue.spotlightQuestions.isEmpty {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(issue.spotlightHandle.map { "\(name) · @\($0)" } ?? name).font(.headline)
+                        if !issue.spotlightIntro.isEmpty { Text(verbatim: issue.spotlightIntro).font(.callout) }
+                        ForEach(issue.spotlightQuestions, id: \.self) { Text(verbatim: "• \($0)").font(.callout).foregroundStyle(Color.inkSecondary) }
+                    }
+                    .padding(.vertical, 4)
+                } header: { MonoLabel("Writer spotlight · Spotlight agent") }
             }
         }
         .scrollContentBackground(.hidden)
@@ -77,24 +111,48 @@ struct IssueEditorView: View {
         }
     }
 
-    private func move(_ source: IndexSet, _ destination: Int) {
-        var entries = issue.orderedEntries
-        entries.move(fromOffsets: source, toOffset: destination)
-        for (index, entry) in entries.enumerated() { entry.position = index }
+    @ViewBuilder
+    private var agentPanel: some View {
+        if case .unavailable(let reason) = ModelAvailability.current {
+            Label(reason, systemImage: "exclamationmark.circle").font(.footnote).foregroundStyle(Color.inkSecondary)
+        } else {
+            Button(agents.isRunning ? "Drafting…" : "Draft with agents", systemImage: "sparkles") {
+                Task { await agents.run(issue, in: context, pack: model.activePack) }
+            }
+            .buttonStyle(.glassProminent)
+            .disabled(agents.isRunning || issue.entries.isEmpty)
+            .accessibilityIdentifier("issue.agents")
+            if agents.isRunning || !agents.finished.isEmpty {
+                ForEach(IssueAgents.Step.allCases, id: \.self) { step in
+                    HStack {
+                        if agents.finished.contains(step) {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.scoutGreen)
+                        } else if agents.current == step {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "circle").foregroundStyle(Color.hairline)
+                        }
+                        Text(step.rawValue).font(.footnote)
+                    }
+                }
+            }
+            if let message = agents.message { Text(message).font(.footnote).foregroundStyle(Color.inkSecondary) }
+            Text("Curator picks sections from your stories, Blurber writes a line each, Spotlight features a shortlisted writer, Editor titles it. Code checks every link, title and author and replaces anything that fails.")
+                .font(.caption).foregroundStyle(Color.inkSecondary)
+        }
+    }
+
+    private func move(_ source: IndexSet, _ destination: Int, in group: [IssueEntry]) {
+        var reordered = group
+        reordered.move(fromOffsets: source, toOffset: destination)
+        let positions = group.map(\.position).sorted()
+        for (entry, position) in zip(reordered, positions) { entry.position = position }
         try? context.save()
     }
 
-    private func delete(_ offsets: IndexSet) {
-        let entries = issue.orderedEntries
-        for index in offsets { context.delete(entries[index]) }
+    private func delete(_ offsets: IndexSet, in group: [IssueEntry]) {
+        for index in offsets { context.delete(group[index]) }
         try? context.save()
-    }
-
-    private func draftIntro() async {
-        isDraftingIntro = true
-        defer { isDraftingIntro = false }
-        let entries = issue.orderedEntries.map { (title: $0.title, note: $0.note) }
-        if let intro = try? await Writer.issueIntro(title: issue.title, entries: entries) { issue.intro = intro }
     }
 }
 
@@ -131,6 +189,17 @@ struct IssueEntryRow: View {
             }
         }
         .padding(.vertical, 4)
+        .safeAreaInset(edge: .bottom, spacing: 6) {
+            if let flag = entry.flag {
+                Label(flag, systemImage: "exclamationmark.triangle")
+                    .font(.caption2).foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(entry.flag == nil ? 0 : 8)
+        .overlay {
+            if entry.flag != nil { RoundedRectangle(cornerRadius: 12).strokeBorder(.orange, lineWidth: 1.5) }
+        }
     }
 
     private func draft() async {

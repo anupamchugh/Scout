@@ -31,6 +31,22 @@ enum ScoutStore {
         try? context.save()
     }
 
+    /// Fills in points, comments and the poster for Hacker News posts from the official API, and files each
+    /// post under its poster ("hn:<user>") so Writers mode shows HN people. Read-only, six requests at a time.
+    static func enrichHackerNews(_ posts: [StoredPost], limit: Int = 40) async {
+        let pending = posts.filter { $0.hnID != nil && $0.hnBy == nil }.prefix(limit)
+        let items = await HNCache.shared.items(pending.compactMap(\.hnID))
+        let byID = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for post in pending {
+            guard let id = post.hnID, let item = byID[id], let by = item.by else { continue }
+            post.hnBy = by
+            post.hnPoints = item.score
+            post.hnComments = item.descendants
+            post.authorName = by
+            post.authorKey = "hn:\(by)"
+        }
+    }
+
     /// Adds a pack's built-in lanes that this install hasn't seeded before, so lanes added in an update
     /// appear, while a lane the person deleted stays deleted.
     static func seedLanes(for pack: RolePack, in context: ModelContext) {
@@ -96,6 +112,7 @@ enum Ingest {
                     if !item.snippet.isEmpty { post.snippet = item.snippet }
                     post.categories = Array(Set(post.categories).union(item.categories)).sorted()
                     post.readingMinutes = post.readingMinutes ?? item.readingMinutes
+                    post.hnID = post.hnID ?? HackerNewsLink.itemID(from: item.guid)
                     if let key = source.laneKey, !post.foundUnder.contains(key) { post.foundUnder.append(key) }
                 } else {
                     let post = StoredPost(
@@ -105,6 +122,7 @@ enum Ingest {
                         snippet: item.snippet, categories: item.categories, foundUnder: source.laneKey.map { [$0] } ?? [],
                         published: item.published, firstSeen: now, readingMinutes: item.readingMinutes,
                         imageURL: item.imageURL?.absoluteString)
+                    post.hnID = HackerNewsLink.itemID(from: item.guid)
                     context.insert(post)
                     byGuid[item.guid] = post
                     byLink[post.link] = post

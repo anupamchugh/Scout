@@ -1,5 +1,5 @@
 //
-//  StoryCard.swift
+//  StoryCardView.swift
 //  Scout
 //
 
@@ -7,7 +7,7 @@ import ScoutKit
 import SwiftUI
 
 /// One post, in the writer card's style: title large, every tag as a chip, the author line small.
-struct StoryCard: View {
+struct StoryCardView: View {
     let story: StoryCandidate
     let laneTags: Set<String>
     let why: String?
@@ -17,6 +17,8 @@ struct StoryCard: View {
     var avatarURL: URL?
     /// Opens the Ask sheet; nil hides the sparkles button.
     var onAsk: (() -> Void)?
+    /// Opens a Hacker News thread brief for HN stories.
+    var onThreadBrief: ((Int) -> Void)?
 
     private var post: PostRecord { story.post }
 
@@ -83,7 +85,19 @@ struct StoryCard: View {
                 .background(Color.scoutGreen.opacity(0.09), in: .rect(cornerRadius: 16))
             }
 
-            Text(byline).font(.footnote).foregroundStyle(Color.inkSecondary).lineLimit(1)
+            if post.isHackerNews {
+                HStack {
+                    Text(hnFacts).font(.footnote.monospacedDigit()).foregroundStyle(Color.inkSecondary).lineLimit(1)
+                    Spacer()
+                    if let id = post.hnID, let onThreadBrief {
+                        Button("Thread brief", systemImage: "text.bubble") { onThreadBrief(id) }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .accessibilityIdentifier("hn.threadBrief")
+                    }
+                }
+            } else {
+                Text(byline).font(.footnote).foregroundStyle(Color.inkSecondary).lineLimit(1)
+            }
         }
         .padding(22)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -92,6 +106,16 @@ struct StoryCard: View {
         .shadow(color: .black.opacity(0.06), radius: 18, y: 8)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("deck.card")
+    }
+
+    /// "news.site · ▲ 77 · 5 comments · 2 hours ago", from the HN API and the feed.
+    private var hnFacts: String {
+        var parts: [String] = []
+        if let domain = post.domain, domain != "news.ycombinator.com" { parts.append(domain) }
+        if let points = post.hnPoints { parts.append("▲ \(points)") }
+        if let comments = post.hnComments { parts.append(comments == 1 ? "1 comment" : "\(comments) comments") }
+        parts.append(post.published.formatted(.relative(presentation: .named)))
+        return parts.joined(separator: " · ")
     }
 
     /// Reading time (only from full-text feeds) and date, from the feed.

@@ -26,12 +26,6 @@ struct OutreachDraft {
 }
 
 @Generable
-struct IssueIntroDraft {
-    @Guide(description: "Two plain sentences introducing this newsletter issue from the entries' topics. No numbers, no links.")
-    var intro: String
-}
-
-@Generable
 struct EntryNoteDraft {
     @Guide(description: "One short sentence telling readers why this post is worth reading, from its snippet. No numbers, no links.")
     var note: String
@@ -41,6 +35,20 @@ struct EntryNoteDraft {
 struct PitchDraft {
     @Guide(description: "One or two plain sentences summarising what the pitch proposes, using only the pitch text")
     var summary: String
+}
+
+@Generable
+struct SuggestionDraft {
+    @Guide(description: "What the editor might do next", .anyOf(ScoutAction.allCases.map(\.rawValue)))
+    var action: String
+    @Guide(description: "A button label of one to four words, no numbers")
+    var label: String
+}
+
+@Generable
+struct SuggestionsDraft {
+    @Guide(description: "Up to three next steps that fit the answer", .maximumCount(3))
+    var suggestions: [SuggestionDraft]
 }
 
 enum ModelAvailability: Equatable {
@@ -88,6 +96,8 @@ enum Writer {
     /// Set by the app when the role pack or store changes.
     static var pack: RolePack = .engineering
     static var container: ModelContainer?
+    /// Tests set a scripted model here; nil is the on-device system model.
+    static var languageModel: (any LanguageModel)?
 
     /// A session on `ScoutProfile` for this pack and mode. Without a store (tests), a plain session with the
     /// pack's fixed instructions.
@@ -96,7 +106,34 @@ enum Writer {
             return LanguageModelSession(instructions: instructions + " " + ScoutProfile.roleInstructions(pack: pack, mode: mode))
         }
         return LanguageModelSession(profile: ScoutProfile(pack: pack, mode: mode, container: container,
-                                                          authorKey: authorKey, storyGuid: storyGuid))
+                                                          authorKey: authorKey, storyGuid: storyGuid, languageModel: languageModel))
+    }
+
+    /// A free-form Ask answer, shown only if every number in it appears in `corpus` and it has no links.
+    /// Plain text, so the evaluation replay can drive it with a scripted model.
+    static func ask(_ question: String, about name: String, post: String, snippet: String, stats: AuthorStats?,
+                    corpus: String, session: LanguageModelSession) async throws -> (text: String, rejection: String?) {
+        let reply = try await session.respond(options: ScoutMode.asking.options) {
+            "Writer: \(name). Post: \"\(post)\"."
+            if let stats { stats }
+            "<feed>\(snippet)</feed>"
+            question
+        }.content
+        guard TextGuard.isGrounded(reply, in: corpus + " " + question) else {
+            return (String(localized: "The answer used numbers or links that aren't in your data, so Scout hid it. Try asking another way."),
+                    "numbers or links not in your data")
+        }
+        return (reply, nil)
+    }
+
+    /// Actions the model proposes after an answer; `SuggestionFilter` decides which survive.
+    static func suggestions(after answer: String, targetID: String, session: LanguageModelSession) async -> [Suggestion] {
+        guard let draft = try? await session.respond(to: "Suggest up to three next steps for the editor after: \(answer)",
+                                                     generating: SuggestionsDraft.self, options: ScoutMode.asking.options).content
+        else { return [] }
+        return draft.suggestions.compactMap { item in
+            ScoutAction(rawValue: item.action).map { Suggestion(action: $0, targetID: targetID, label: item.label) }
+        }
     }
 
     /// Identifies the instructions a run used, so evaluations can compare versions.
@@ -108,13 +145,14 @@ enum Writer {
 
     /// The card's "why this writer" line, kept only if its evidence is quoted and the line is clean.
     /// `stats` reaches the model as a typed `PromptRepresentable` value, not pasted text.
-    static func why(for candidate: AuthorCandidate, lane: LaneSpec, stats: AuthorStats?) async throws -> String? {
+    static func why(for candidate: AuthorCandidate, lane: LaneSpec, stats: AuthorStats?, hnStats: HNAuthorStats? = nil) async throws -> String? {
         let source = candidate.sourceText
         let draft = try await session(.scouting, authorKey: candidate.authorKey).respond(generating: WhyDraft.self, options: ScoutMode.scouting.options) {
-            "Lane: \(lane.name), about \(lane.theme)."
+            "Newsletter section: “\(lane.name)”, about \(lane.theme)."
             if let stats { stats }
+            if let hnStats { hnStats }
             "<feed>\(source)</feed>"
-            "Why might this writer suit the lane?"
+            "Why might this writer suit that section?"
         }.content
         guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line) else { return nil }
         return draft.line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -124,9 +162,9 @@ enum Writer {
     static func why(title: String, snippet: String, lane: LaneSpec) async throws -> String? {
         let source = "\(title). \(snippet)"
         let prompt = """
-            Lane: \(lane.name), about \(lane.theme).
+            Newsletter section: “\(lane.name)”, about \(lane.theme).
             <feed>\(source)</feed>
-            Why might this story suit the lane?
+            Why might this story suit that section?
             """
         let draft = try await session(.scouting).respond(to: prompt, generating: WhyDraft.self, options: ScoutMode.scouting.options).content
         guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line) else { return nil }
@@ -145,13 +183,6 @@ enum Writer {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return OutreachCheck.isGood(note, title: title, snippet: snippet)
             ? note : OutreachCheck.template(title: title, snippet: snippet, lane: lane)
-    }
-
-    static func issueIntro(title: String, entries: [(title: String, note: String)]) async throws -> String? {
-        let list = entries.map { "\($0.title). \($0.note)" }.joined(separator: "\n")
-        let prompt = "Introduce the newsletter issue \"\(title)\".\n<feed>\(list)</feed>"
-        let intro = try await session(.issueWriting).respond(to: prompt, generating: IssueIntroDraft.self, options: ScoutMode.issueWriting.options).content.intro
-        return TextGuard.isClean(intro) ? intro.trimmingCharacters(in: .whitespacesAndNewlines) : nil
     }
 
     static func entryNote(title: String, snippet: String) async throws -> String? {

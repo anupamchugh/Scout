@@ -17,6 +17,7 @@ struct TodayView: View {
     @State private var showsPackPicker = false
     @State private var showsNewLane = false
     @State private var asking: AskSubject?
+    @State private var threadBrief: ThreadBriefItem?
 
     private var shortlistCount: Int { shortlisted.count + shortlistedStories.count }
     private var deckCount: Int { model.mode == .writers ? model.deck.count : model.storyDeck.count }
@@ -43,18 +44,24 @@ struct TodayView: View {
                 Spacer()
             } else if model.mode == .writers {
                 SwipeDeck(items: model.deck, onDecide: { model.decide($0, $1) }) { candidate in
+                    if candidate.authorKey.hasPrefix("hn:") {
+                        HNPersonCard(candidate: candidate, stats: model.hnStats[candidate.authorKey], why: model.whyLines[candidate.authorKey],
+                                     onAsk: { asking = .writer(candidate) }, onThreadBrief: { threadBrief = ThreadBriefItem(id: $0) })
+                    } else {
                     AuthorCard(candidate: candidate, why: model.whyLines[candidate.authorKey],
                                stats: model.authorStats[candidate.authorKey], onAsk: { asking = .writer(candidate) })
                         .contextMenu {
                             Button("Block \(candidate.name)", systemImage: "hand.raised", role: .destructive) { model.block(candidate) }
                         }
+                    }
                 }
             } else {
                 let laneTags = model.activeLane.tags
                 let visual = model.activePack.isVisual
                 SwipeDeck(items: model.storyDeck, onDecide: { model.decideStory($0, $1) }) { story in
-                    StoryCard(story: story, laneTags: laneTags, why: model.storyWhyLines[story.id], imageFirst: visual,
-                              avatarURL: model.avatars[story.post.authorKey], onAsk: { asking = .story(story) })
+                    StoryCardView(story: story, laneTags: laneTags, why: model.storyWhyLines[story.id], imageFirst: visual,
+                              avatarURL: model.avatars[story.post.authorKey], onAsk: { asking = .story(story) },
+                              onThreadBrief: { threadBrief = ThreadBriefItem(id: $0) })
                 }
             }
         }
@@ -66,6 +73,7 @@ struct TodayView: View {
         .sheet(isPresented: $showsPackPicker) { PackPickerView() }
         .sheet(isPresented: $showsNewLane) { NewLaneView() }
         .sheet(item: $asking) { AskSheet(subject: $0) }
+        .sheet(item: $threadBrief) { ThreadBriefView(storyID: $0.id) }
         .onAppear { showsPackPicker = model.needsPackChoice }
         .task(id: model.deck.first?.id) { if let top = model.deck.first { await model.ensureStats(for: top) } }
     }
@@ -134,6 +142,10 @@ struct TodayView: View {
         .accessibilityIdentifier("today.lanePicker")
         .accessibilityLabel("Lane: \(model.activeLaneName), \(deckCount) cards")
     }
+}
+
+struct ThreadBriefItem: Identifiable {
+    let id: Int
 }
 
 /// Make a lane from tags seen this week and from tag pairs that keep appearing together.

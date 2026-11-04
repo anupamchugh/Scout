@@ -50,6 +50,13 @@ enum AskSubject: Identifiable {
         case .story(let story): story.lane
         }
     }
+
+    var handle: String? {
+        switch self {
+        case .writer(let candidate): candidate.handle
+        case .story(let story): story.post.handle
+        }
+    }
 }
 
 struct AskAnswer: Identifiable {
@@ -59,6 +66,8 @@ struct AskAnswer: Identifiable {
     /// "On-device model" or "From your data".
     let source: String
     var run: ModelRun?
+    /// Proposed by the model, filtered by code; empty means the code defaults are shown.
+    var suggestions: [Suggestion] = []
 }
 
 struct AskSheet: View {
@@ -114,7 +123,18 @@ struct AskSheet: View {
                     }
 
                     ForEach($answers) { $answer in
-                        AnswerCard(answer: $answer, actions: actions, perform: perform)
+                        AnswerCard(answer: $answer, actions: actions(for: answer), perform: perform,
+                                   appleFeedback: { run in appleFeedback(for: run) })
+                    }
+                    if !followUps.isEmpty {
+                        FlowLayout(spacing: 8) {
+                            ForEach(followUps, id: \.self) { chip in
+                                chipButton(chip, systemImage: "arrow.turn.down.right") {
+                                    followUps = []
+                                    Task { await ask(chip) }
+                                }
+                            }
+                        }
                     }
 
                     if isThinking {
@@ -154,6 +174,22 @@ struct AskSheet: View {
                 session = made
             }
         }
+    }
+
+    /// Opt-in: a feedback attachment for Apple, built only when the person asks for it.
+    private func appleFeedback(for run: ModelRun) -> Data? {
+        guard let session else { return nil }
+        let issues = run.reasons.map { reason -> LanguageModelFeedback.Issue in
+            let category: LanguageModelFeedback.Issue.Category = switch reason {
+            case "Made something up", "Wrong": .incorrect
+            case "Too vague", "Missing info": .unhelpful
+            case "Wrong tone": .didNotFollowInstructions
+            default: .unhelpful
+            }
+            return LanguageModelFeedback.Issue(category: category, explanation: reason)
+        }
+        return session.logFeedbackAttachment(sentiment: run.rating > 0 ? .positive : .negative, issues: issues,
+                                             desiredResponseText: run.desired.isEmpty ? nil : run.desired)
     }
 
     private func chipButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
@@ -210,18 +246,9 @@ struct AskSheet: View {
             default: chip
             }
             do {
-                let reply = try await session.respond(options: ScoutMode.asking.options) {
-                    "Writer: \(subject.name). Post: \"\(subject.post.title)\"."
-                    if let stats = model.authorStats[subject.authorKey] { stats }
-                    "<feed>\(subject.post.snippet)</feed>"
-                    prompt
-                }.content
-                if TextGuard.isGrounded(reply, in: corpus + " " + prompt) {
-                    output = reply
-                } else {
-                    rejection = "numbers or links not in your data"
-                    output = String(localized: "The answer used numbers or links that aren't in your data, so Scout hid it. Try asking another way.")
-                }
+                (output, rejection) = try await Writer.ask(prompt, about: subject.name, post: subject.post.title,
+                                                           snippet: subject.post.snippet, stats: model.authorStats[subject.authorKey],
+                                                           corpus: corpus, session: session)
             } catch {
                 rejection = "error"
                 output = WriterCopy.message(for: error)
@@ -233,7 +260,14 @@ struct AskSheet: View {
                            output: output, rejection: rejection, latency: Date.now.timeIntervalSince(started))
         context.insert(run)
         try? context.save()
-        answers.append(AskAnswer(question: chip, text: output, source: rejection == nil ? "On-device model" : "Scout", run: run))
+        var answer = AskAnswer(question: chip, text: output, source: rejection == nil ? "On-device model" : "Scout", run: run)
+        if rejection == nil {
+            let proposed = await Writer.suggestions(after: output, targetID: subject.id, session: session)
+            answer.suggestions = SuggestionFilter.filter(proposed, onScreen: [subject.id],
+                                                         withHandle: subject.handle == nil ? [] : [subject.id],
+                                                         hasIssue: true, alreadyDone: doneActions)
+        }
+        answers.append(answer)
     }
 
     // MARK: Data answers
@@ -253,40 +287,68 @@ struct AskSheet: View {
                 : similar.map { "• \($0.name), \($0.percent)% similar" }.joined(separator: "\n")
             answers.append(AskAnswer(question: chip, text: text, source: "From your data · on-device embeddings"))
         default:
-            perform("Add to issue")
+            perform(Suggestion(action: .addToIssue, targetID: subject.id, label: "Add to issue"))
         }
     }
 
-    // MARK: Actions (chosen by code, run only on a tap)
+    // MARK: Actions (proposed by the model or code, run only on a tap)
 
-    private var actions: [String] {
-        ["Shortlist", "Add to issue", "Open post"].filter { !done.contains($0) }
+    @State private var doneActions: Set<ScoutAction> = []
+    @State private var followUps: [String] = []
+
+    /// Shown when the model proposed nothing that passed the filter.
+    private var defaultActions: [Suggestion] {
+        [Suggestion(action: .shortlist, targetID: subject.id, label: "Shortlist"),
+         Suggestion(action: .addToIssue, targetID: subject.id, label: "Add to issue"),
+         Suggestion(action: .openPost, targetID: subject.id, label: "Open post")].filter { !doneActions.contains($0.action) }
     }
 
-    private func perform(_ action: String) {
-        switch action {
-        case "Open post":
+    private func actions(for answer: AskAnswer) -> [Suggestion] {
+        let proposed = answer.suggestions.filter { !doneActions.contains($0.action) }
+        return proposed.isEmpty ? defaultActions : proposed
+    }
+
+    /// The same functions the swipe gestures and App Intents call.
+    private func perform(_ suggestion: Suggestion) {
+        switch suggestion.action {
+        case .openPost:
             if let url = URL(string: subject.post.link) { openURL(url) }
-        case "Shortlist", "Add to issue":
-            let verdict: Verdict = action == "Shortlist" ? .shortlist : .issue
+        case .shortlist, .addToIssue:
+            let verdict: Verdict = suggestion.action == .shortlist ? .shortlist : .issue
             switch subject {
             case .writer(let candidate): model.decide(candidate, verdict)
             case .story(let story): model.decideStory(story, verdict)
             }
-            done.insert(action)
-            answers.append(AskAnswer(question: action, text: action == "Shortlist" ? "Added to your shortlist."
-                                     : "Added to this week's issue.", source: "Scout"))
-        default:
-            break
+            note(suggestion.action == .shortlist ? "Added to your shortlist." : "Added to this week's issue.")
+        case .draftOutreach:
+            Task { await ask("Draft outreach") }
+        case .followWriter:
+            if let handle = subject.handle, model.followWriter(handle: handle, name: subject.name) {
+                note("Following \(subject.name): their feed is now a lane.")
+            }
+        case .muteTag:
+            if let tag = subject.post.categories.first {
+                model.muteTag(tag)
+                note("Muted “\(tag)”: those cards rank lower now.")
+            }
+        case .askFollowUp:
+            followUps = ["Shorter", "More technical", "Give an example from their posts"]
         }
+        if suggestion.action != .askFollowUp && suggestion.action != .openPost { doneActions.insert(suggestion.action) }
+    }
+
+    private func note(_ text: String) {
+        answers.append(AskAnswer(question: "Done", text: text, source: "Scout"))
     }
 }
 
 struct AnswerCard: View {
     @Binding var answer: AskAnswer
-    let actions: [String]
-    let perform: (String) -> Void
+    let actions: [Suggestion]
+    let perform: (Suggestion) -> Void
+    let appleFeedback: (ModelRun) -> Data?
     @State private var showsReasons = false
+    @State private var feedbackFile: URL?
 
     private let reasons = ["Wrong", "Too vague", "Made something up", "Missing info", "Wrong tone"]
 
@@ -297,8 +359,8 @@ struct AnswerCard: View {
             Text(answer.source).font(.caption2).foregroundStyle(Color.inkSecondary)
 
             HStack(spacing: 8) {
-                ForEach(actions.prefix(3), id: \.self) { action in
-                    Button(action) { perform(action) }
+                ForEach(actions.prefix(3), id: \.self) { suggestion in
+                    Button(suggestion.label) { perform(suggestion) }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         .lineLimit(1)
@@ -329,6 +391,23 @@ struct AnswerCard: View {
                         .tint(run.reasons.contains(reason) ? .scoutGreen : .secondary)
                     }
                 }
+                TextField("Write what you wanted (optional)", text: Bindable(run).desired, axis: .vertical)
+                    .font(.caption)
+                    .textFieldStyle(.roundedBorder)
+                HStack {
+                    Button("Prepare feedback for Apple", systemImage: "envelope") {
+                        if let data = appleFeedback(run) {
+                            let url = FileManager.default.temporaryDirectory.appendingPathComponent("scout-feedback.json")
+                            try? data.write(to: url)
+                            feedbackFile = url
+                        }
+                    }
+                    .font(.caption)
+                    if let feedbackFile {
+                        ShareLink(item: feedbackFile) { Label("Share", systemImage: "square.and.arrow.up") }.font(.caption)
+                    }
+                }
+                Text("Nothing is sent unless you share the file yourself.").font(.caption2).foregroundStyle(Color.inkSecondary)
             }
         }
         .padding(14)

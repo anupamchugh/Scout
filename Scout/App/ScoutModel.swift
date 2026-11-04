@@ -59,6 +59,8 @@ final class ScoutModel {
     private(set) var suggestedPairs: [(pair: TagPair, count: Int)] = []
     /// Writers' avatars from their own feeds, by author key.
     private(set) var avatars: [String: URL] = [:]
+    /// Hacker News poster statistics from the official API, computed in code, by author key ("hn:<user>").
+    private(set) var hnStats: [String: HNAuthorStats] = [:]
     /// Statistics from each writer's own feed, computed in code, by author key.
     private(set) var authorStats: [String: AuthorStats] = [:]
     /// "Why this story" lines that passed `TextGuard`, by post guid.
@@ -79,6 +81,8 @@ final class ScoutModel {
         if usesDemoData {
             activePack = .engineering
         }
+        // -lane <name>: start on one lane.
+        if let i = args.firstIndex(of: "-lane"), i + 1 < args.count { activeLaneName = args[i + 1] }
         // -choosePack: show the onboarding pack picker again.
         if args.contains("-choosePack") { PackStore.activeID = nil }
         if let i = args.firstIndex(of: "-pack"), i + 1 < args.count {
@@ -170,6 +174,13 @@ final class ScoutModel {
         guard !Task.isCancelled else { return }
         failedFeeds = report.failures.keys.map(\.label).sorted()
         _ = try? Ingest.upsert(report, into: context)
+        let cutoff = Date.now.addingTimeInterval(-window.seconds)
+        let hnPosts = (try? context.fetch(FetchDescriptor<StoredPost>(predicate: #Predicate { $0.hnID != nil && $0.published >= cutoff }))) ?? []
+        if !hnPosts.isEmpty {
+            await ScoutStore.enrichHackerNews(hnPosts)
+            try? context.save()
+            guard !Task.isCancelled else { return }
+        }
 
         var candidates = await rank(lane)
         guard !Task.isCancelled else { return }
@@ -264,6 +275,13 @@ final class ScoutModel {
 
     /// Fetches a writer's own feed when their card reaches the top, in a child task the view cancels.
     func ensureStats(for candidate: AuthorCandidate) async {
+        if candidate.authorKey.hasPrefix("hn:") {
+            let user = String(candidate.authorKey.dropFirst(3))
+            guard hnStats[candidate.authorKey] == nil, let stats = await HNCache.shared.stats(for: user) else { return }
+            guard !Task.isCancelled else { return }
+            hnStats[candidate.authorKey] = stats
+            return
+        }
         guard let handle = candidate.handle, authorStats[candidate.authorKey] == nil else { return }
         let report = await fetch([.author(handle)])
         guard !Task.isCancelled else { return }
@@ -322,7 +340,7 @@ final class ScoutModel {
         PostRecord(guid: post.guid, title: post.title, link: post.link, snippet: post.snippet, authorKey: post.authorKey,
                    authorName: post.authorName, handle: post.handle, categories: post.categories,
                    foundUnder: post.foundUnder, published: post.published, readingMinutes: post.readingMinutes,
-                   imageURL: post.imageURL)
+                   imageURL: post.imageURL, hnID: post.hnID, hnPoints: post.hnPoints, hnComments: post.hnComments)
     }
 
     private func decidedOrBlocked() -> Set<String> {
@@ -432,11 +450,30 @@ final class ScoutModel {
         for candidate in deck.prefix(3) where !whyRequested.contains(candidate.authorKey) {
             whyRequested.insert(candidate.authorKey)
             Task {
-                if let line = try? await Writer.why(for: candidate, lane: lane, stats: authorStats[candidate.authorKey]) {
+                if let line = try? await Writer.why(for: candidate, lane: lane, stats: authorStats[candidate.authorKey],
+                                                    hnStats: hnStats[candidate.authorKey]) {
                     whyLines[candidate.authorKey] = line
                 }
             }
         }
+    }
+
+    /// Follows a writer by adding their own feed as a lane in the active pack. Returns false if already there.
+    @discardableResult
+    func followWriter(handle: String, name: String) -> Bool {
+        let feed = "https://medium.com/feed/@\(handle)"
+        guard !lanes.contains(where: { $0.tags.contains(feed) }) else { return false }
+        addLane(name: "Following \(name)", tags: [feed], theme: "Posts by \(name)")
+        return true
+    }
+
+    /// Mutes a tag in this pack's taste: its weight goes to the floor, so its cards rank lower. Code only.
+    func muteTag(_ tag: String) {
+        let record = ScoutStore.taste(for: activePack, in: context)
+        var taste = record.taste
+        taste.tagWeights[tag] = -1
+        record.taste = taste
+        try? context.save()
     }
 
     /// Writers in today's deck whose text is closest to this writer's, by on-device embeddings. Code only.
