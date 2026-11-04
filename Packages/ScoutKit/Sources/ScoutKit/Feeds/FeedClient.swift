@@ -1,33 +1,45 @@
 //
 //  FeedClient.swift
-//  Scout
+//  ScoutKit
 //
 
 import Foundation
 
-enum FeedError: Error, Equatable {
+public enum FeedError: Error, Equatable {
     case http(Int)
 }
 
 /// Fetches Medium RSS feeds, a few at a time.
-struct FeedClient: Sendable {
-    var session: URLSession = .shared
-    /// Requests in flight at once; the rest wait their turn in the task group.
-    var maxConcurrent = 6
+public struct FeedClient: Sendable {
+    public init(session: URLSession = .shared, maxConcurrent: Int = 6) {
+        self.session = session
+        self.maxConcurrent = maxConcurrent
+    }
 
-    struct Report: Sendable {
-        var items: [FeedSource: [FeedItem]] = [:]
-        var channelImages: [FeedSource: URL] = [:]
-        var failures: [FeedSource: String] = [:]
+    public var session: URLSession = .shared
+    /// Requests in flight at once; the rest wait their turn in the task group.
+    public var maxConcurrent = 6
+
+    public struct Report: Sendable {
+
+        public init(items: [FeedSource: [FeedItem]] = [:], channelImages: [FeedSource: URL] = [:], failures: [FeedSource: String] = [:]) {
+            self.items = items
+            self.channelImages = channelImages
+            self.failures = failures
+        }
+
+        public var items: [FeedSource: [FeedItem]] = [:]
+        public var channelImages: [FeedSource: URL] = [:]
+        public var failures: [FeedSource: String] = [:]
     }
 
     @concurrent
-    func fetch(_ source: FeedSource) async throws -> [FeedItem] {
+    public func fetch(_ source: FeedSource) async throws -> [FeedItem] {
         try await fetchDocument(source).items
     }
 
     @concurrent
-    func fetchDocument(_ source: FeedSource) async throws -> FeedDocument {
+    public func fetchDocument(_ source: FeedSource) async throws -> FeedDocument {
         var request = URLRequest(url: source.url, timeoutInterval: 20)
         request.setValue("application/rss+xml", forHTTPHeaderField: "Accept")
         let (data, response) = try await session.data(for: request)
@@ -38,7 +50,7 @@ struct FeedClient: Sendable {
     }
 
     @concurrent
-    func fetchAll(_ sources: [FeedSource]) async -> Report {
+    public func fetchAll(_ sources: [FeedSource]) async -> Report {
         await withTaskGroup(of: (FeedSource, Result<FeedDocument, any Error>).self) { group in
             var queue = sources.makeIterator()
             for _ in 0..<maxConcurrent {

@@ -106,6 +106,13 @@ Twitter handles. Reading time appears only for posts from feeds that carry full 
 Feeds are fetched through a capped `TaskGroup` behind a `FeedCache` actor. Changing the lane or
 window cancels a load in progress.
 
+## Layout
+
+- `Scout/`: the app, holding SwiftUI, SwiftData, App Intents, Spotlight and the Foundation Models
+  sessions.
+- `Packages/ScoutKit/`: feeds, scoring, export and role packs as a Swift package with no UI or
+  storage dependencies, so other apps can import the same logic. See its README.
+
 ## Build
 
 ```bash
@@ -121,6 +128,9 @@ xcodebuild -project Scout.xcodeproj -scheme Scout -destination 'platform=iOS Sim
 ```
 
 Swift 6 language mode with complete concurrency checking; the build has no warnings.
+
+ScoutKit's tests run on macOS with `swift test` in `Packages/ScoutKit`. The app's tests cover the
+SwiftData store and the model profile.
 
 Tests use Swift Testing for:
 

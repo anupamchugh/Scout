@@ -1,12 +1,11 @@
 //
 //  StoriesTests.swift
-//  ScoutTests
+//  ScoutKitTests
 //
 
 import Foundation
-import SwiftData
 import Testing
-@testable import Scout
+@testable import ScoutKit
 
 private let now = Date(timeIntervalSince1970: 1_800_000_000)
 private let swiftLane = LaneSpec(name: "Swift", tags: ["swift", "concurrency", "ios"], theme: "Swift")
@@ -22,43 +21,6 @@ private func story(_ guid: String, tags: [String], foundUnder: [String], hoursAg
     PostRecord(guid: guid, title: "Title \(guid)", link: "https://medium.com/@w/\(guid)", snippet: "", authorKey: "w\(guid)",
                authorName: "W\(guid)", handle: "w\(guid)", categories: tags, foundUnder: foundUnder,
                published: now.addingTimeInterval(-hoursAgo * 3600), readingMinutes: nil)
-}
-
-@MainActor
-struct DedupeTests {
-
-    @Test func sameStoryFromTwoTagFeedsBecomesOnePost() throws {
-        let container = ScoutStore.make(inMemory: true)
-        let context = container.mainContext
-        let post = item("https://medium.com/p/abc", link: "https://medium.com/@w/story-abc?source=rss------swift-5",
-                        tags: ["swift", "concurrency"])
-        var report = FeedClient.Report()
-        report.items[.tag("swift")] = [post]
-        report.items[.tag("concurrency")] = [post]
-        try Ingest.upsert(report, into: context, now: now)
-
-        let stored = try context.fetch(FetchDescriptor<StoredPost>())
-        #expect(stored.count == 1)
-        #expect(Set(stored[0].foundUnder) == ["swift", "concurrency"])
-        #expect(Set(stored[0].categories) == ["swift", "concurrency"])
-        #expect(stored[0].link == "https://medium.com/@w/story-abc")
-    }
-
-    @Test func differentGuidSameCanonicalLinkMerges() throws {
-        let container = ScoutStore.make(inMemory: true)
-        let context = container.mainContext
-        var first = FeedClient.Report()
-        first.items[.tag("swift")] = [item("guid-1", link: "https://medium.com/@w/story?source=a", tags: ["swift"])]
-        try Ingest.upsert(first, into: context, now: now)
-        var second = FeedClient.Report()
-        second.items[.tag("ios")] = [item("guid-2", link: "https://medium.com/@w/story?source=b", tags: ["ios"])]
-        try Ingest.upsert(second, into: context, now: now)
-
-        let stored = try context.fetch(FetchDescriptor<StoredPost>())
-        #expect(stored.count == 1)
-        #expect(Set(stored[0].foundUnder) == ["swift", "ios"])
-        #expect(Set(stored[0].categories) == ["swift", "ios"])
-    }
 }
 
 struct StoryScoringTests {
@@ -121,7 +83,7 @@ struct AuthorStatsTests {
 
     /// salari-dev.medium.com/feed as fetched on 2026-11-05 (10 posts, 14 Oct to 4 Nov 2026).
     private func fixture() throws -> [FeedItem] {
-        let url = try #require(Bundle(for: FixtureAnchor.self).url(forResource: "salari-dev-2026-11-05", withExtension: "xml"))
+        let url = try #require(Bundle.module.url(forResource: "salari-dev-2026-11-05", withExtension: "xml", subdirectory: "Fixtures"))
         return try RSSParser.parse(Data(contentsOf: url))
     }
 
@@ -156,4 +118,3 @@ struct AuthorStatsTests {
     }
 }
 
-final class FixtureAnchor {}

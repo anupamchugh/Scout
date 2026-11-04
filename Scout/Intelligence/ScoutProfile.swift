@@ -10,6 +10,7 @@
 import Foundation
 import FoundationModels
 import Observation
+import ScoutKit
 import SwiftData
 
 enum ScoutMode: String, Sendable, CaseIterable {

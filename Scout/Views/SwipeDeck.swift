@@ -7,6 +7,7 @@
 //  so the gesture and fly-out here are new.
 //
 
+import ScoutKit
 import SwiftUI
 
 struct SwipeDeck<Item: Identifiable, Card: View>: View {

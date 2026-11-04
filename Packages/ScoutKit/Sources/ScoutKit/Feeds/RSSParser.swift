@@ -1,23 +1,23 @@
 //
 //  RSSParser.swift
-//  Scout
+//  ScoutKit
 //
 
 import Foundation
 
-enum RSSParserError: Error, Equatable {
+public enum RSSParserError: Error, Equatable {
     case malformed(String)
 }
 
 /// Parses RSS 2.0 (Medium, Hacker News, blogs, Substack) and Atom (GitHub releases, YouTube) with one `XMLParser`.
-final class RSSParser: NSObject, XMLParserDelegate {
+public final class RSSParser: NSObject, XMLParserDelegate {
 
-    static func parse(_ data: Data) throws -> [FeedItem] {
+    public static func parse(_ data: Data) throws -> [FeedItem] {
         try parseDocument(data).items
     }
 
     /// Items plus the channel's image, which on an author feed is the writer's avatar.
-    static func parseDocument(_ data: Data) throws -> FeedDocument {
+    public static func parseDocument(_ data: Data) throws -> FeedDocument {
         let delegate = RSSParser()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
@@ -52,7 +52,7 @@ final class RSSParser: NSObject, XMLParserDelegate {
             ?? (try? Date.ISO8601FormatStyle().parse(text))
     }
 
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
+    public func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
                 qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         if elementName == "image" && !inItem {
             inChannelImage = true
@@ -83,15 +83,15 @@ final class RSSParser: NSObject, XMLParserDelegate {
         text = ""
     }
 
-    func parser(_ parser: XMLParser, foundCharacters string: String) {
+    public func parser(_ parser: XMLParser, foundCharacters string: String) {
         text += string
     }
 
-    func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
+    public func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
         text += String(decoding: CDATABlock, as: UTF8.self)
     }
 
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?,
+    public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?,
                 qualifiedName qName: String?) {
         if inChannelImage {
             if elementName == "url" { channelImage = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)) }
@@ -144,11 +144,11 @@ final class RSSParser: NSObject, XMLParserDelegate {
 }
 
 /// Small helpers for the HTML Medium puts inside feed items.
-enum HTMLText {
+public enum HTMLText {
 
     /// Medium's tag feeds put a one-line teaser in `<p class="medium-feed-snippet">`.
     /// Author and publication feeds have full text instead; use its first heading or paragraph.
-    static func snippet(description: String, content: String?) -> String {
+    public static func snippet(description: String, content: String?) -> String {
         if let teaser = firstMatch(#"<p class="medium-feed-snippet">(.*?)</p>"#, in: description) {
             return plainText(teaser)
         }
@@ -163,22 +163,22 @@ enum HTMLText {
         return text == "Comments" ? "" : String(text.prefix(280))
     }
 
-    static func firstImage(in html: String) -> URL? {
+    public static func firstImage(in html: String) -> URL? {
         firstMatch(#"<img[^>]*src="([^"]+)""#, in: html).flatMap(URL.init(string:))
     }
 
-    static func plainText(_ html: String) -> String {
+    public static func plainText(_ html: String) -> String {
         let stripped = html.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
         return decodeEntities(stripped)
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
     }
 
-    static func wordCount(_ text: String) -> Int {
+    public static func wordCount(_ text: String) -> Int {
         text.split(whereSeparator: \.isWhitespace).count
     }
 
-    static func decodeEntities(_ text: String) -> String {
+    public static func decodeEntities(_ text: String) -> String {
         guard text.contains("&") else { return text }
         var result = ""
         var rest = text[...]

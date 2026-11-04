@@ -8,6 +8,7 @@
 //
 
 import AppIntents
+import ScoutKit
 import SwiftUI
 
 struct ScoutSiriCard: View {

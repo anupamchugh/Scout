@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import ScoutKit
 import SwiftData
 
 enum ScoutStore {

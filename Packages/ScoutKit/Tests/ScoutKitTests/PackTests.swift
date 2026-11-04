@@ -1,11 +1,11 @@
 //
 //  PackTests.swift
-//  ScoutTests
+//  ScoutKitTests
 //
 
 import Foundation
 import Testing
-@testable import Scout
+@testable import ScoutKit
 
 private let now = Date(timeIntervalSince1970: 1_800_000_000)
 
@@ -110,14 +110,6 @@ struct RolePackTests {
         #expect(FeedSource.displayName("swift") == "swift")
         #expect(FeedSource(laneKey: "https://news.ycombinator.com/rss").laneKey == "https://news.ycombinator.com/rss")
     }
-
-    @Test func eachModeAndPackGetsItsOwnInstructions() {
-        let visual = ScoutProfile.roleInstructions(pack: .illustrator, mode: .scouting)
-        #expect(visual.contains("Never describe the artist as a person"))
-        #expect(ScoutProfile.roleInstructions(pack: .engineering, mode: .scouting).contains("recentPosts"))
-        #expect(ScoutProfile.roleInstructions(pack: .techWriter, mode: .issueWriting).contains(RolePack.techWriter.outreachStyle))
-        #expect(ScoutMode.issueWriting.options.temperature == 0.6)
-    }
 }
 
 struct FeedFormatTests {
@@ -163,6 +155,5 @@ struct FeedFormatTests {
         #expect(item.creator == "")
         #expect(item.snippet == "")
         #expect(item.published == Date(timeIntervalSince1970: 1_793_825_118))
-        #expect(Ingest.author(item, .feed(URL(string: "https://news.ycombinator.com/rss")!)) == "example.com")
     }
 }

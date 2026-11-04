@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import ScoutKit
 import SwiftData
 
 /// A post as the feed described it.

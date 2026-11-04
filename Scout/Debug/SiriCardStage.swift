@@ -4,6 +4,7 @@
 //
 
 #if DEBUG
+import ScoutKit
 import SwiftUI
 
 /// `-siriCardStage`: renders the Siri card on a light platter, as SiriCardKit's preview stage does.

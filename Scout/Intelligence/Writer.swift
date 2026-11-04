@@ -8,6 +8,7 @@
 
 import Foundation
 import FoundationModels
+import ScoutKit
 import SwiftData
 
 @Generable

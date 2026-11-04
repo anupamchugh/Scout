@@ -1,11 +1,11 @@
 //
 //  IssueTests.swift
-//  ScoutTests
+//  ScoutKitTests
 //
 
 import Foundation
 import Testing
-@testable import Scout
+@testable import ScoutKit
 
 private let issue = IssueContent(number: 12, title: "Swift concurrency", intro: "Actors, task groups and a little SwiftUI.",
                                  entries: [

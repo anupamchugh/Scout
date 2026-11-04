@@ -3,6 +3,7 @@
 //  Scout
 //
 
+import ScoutKit
 import SwiftUI
 import UIKit
 

@@ -1,13 +1,13 @@
 //
 //  RSSParserTests.swift
-//  ScoutTests
+//  ScoutKitTests
 //
 //  Fixtures follow the shape of Medium's live feeds (checked 2026-11-04); titles and people are made up.
 //
 
 import Foundation
 import Testing
-@testable import Scout
+@testable import ScoutKit
 
 private let tagFeed = """
 <?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">

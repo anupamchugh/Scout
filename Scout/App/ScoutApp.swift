@@ -4,6 +4,7 @@
 //
 
 import CoreSpotlight
+import ScoutKit
 import SwiftData
 import SwiftUI
 

@@ -1,27 +1,27 @@
 //
 //  FeedCache.swift
-//  Scout
+//  ScoutKit
 //
 
 import Foundation
 
 /// Remembers recent feed fetches so switching lanes or windows doesn't refetch Medium every time.
 /// An actor, so concurrent loads from the deck, search and Siri share one cache safely.
-actor FeedCache {
-    static let shared = FeedCache()
+public actor FeedCache {
+    public static let shared = FeedCache()
 
     private var entries: [FeedSource: (fetched: Date, document: FeedDocument)] = [:]
     private let lifetime: TimeInterval
     private let client: FeedClient
 
-    init(lifetime: TimeInterval = 15 * 60, client: FeedClient = FeedClient()) {
+    public init(lifetime: TimeInterval = 15 * 60, client: FeedClient = FeedClient()) {
         self.lifetime = lifetime
         self.client = client
     }
 
     /// Cached documents still fresh at `now`, plus a network fetch (capped concurrency) for the rest.
     /// Cancelling the calling task cancels the fetches still running.
-    func load(_ sources: [FeedSource], now: Date = .now) async -> FeedClient.Report {
+    public func load(_ sources: [FeedSource], now: Date = .now) async -> FeedClient.Report {
         var report = FeedClient.Report()
         var missing: [FeedSource] = []
         for source in Set(sources) {
@@ -44,7 +44,7 @@ actor FeedCache {
         return report
     }
 
-    func clear() {
+    public func clear() {
         entries = [:]
     }
 }

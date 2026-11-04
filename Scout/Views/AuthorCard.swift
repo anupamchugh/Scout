@@ -3,6 +3,7 @@
 //  Scout
 //
 
+import ScoutKit
 import SwiftUI
 
 /// An opaque card (no glass on content), laid out like the approved deck mockup.

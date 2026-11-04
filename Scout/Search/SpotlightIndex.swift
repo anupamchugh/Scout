@@ -5,6 +5,7 @@
 
 import CoreSpotlight
 import Foundation
+import ScoutKit
 import UniformTypeIdentifiers
 
 /// Shortlisted writers and their posts go into Core Spotlight; `CSUserQuery` searches them semantically.

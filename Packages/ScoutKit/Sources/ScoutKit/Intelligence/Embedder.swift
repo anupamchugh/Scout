@@ -1,6 +1,6 @@
 //
 //  Embedder.swift
-//  Scout
+//  ScoutKit
 //
 
 import Accelerate
@@ -8,11 +8,11 @@ import Foundation
 import NaturalLanguage
 
 /// On-device text similarity for the semantic match signal.
-enum Embedder {
+public enum Embedder {
 
     /// Cosine similarity of each text to `theme`, clamped to 0...1. Empty when no embedding is available.
     @concurrent
-    static func similarities(_ texts: [String: String], to theme: String) async -> [String: Double] {
+    public static func similarities(_ texts: [String: String], to theme: String) async -> [String: Double] {
         guard let embedding = NLEmbedding.sentenceEmbedding(for: .english),
               let target = embedding.vector(for: theme) else { return [:] }
         var result: [String: Double] = [:]
@@ -26,7 +26,7 @@ enum Embedder {
 
     /// Cosine similarity of each text to an existing vector (the liked-items centroid), clamped to 0...1.
     @concurrent
-    static func similarities(_ texts: [String: String], toVector target: [Double]) async -> [String: Double] {
+    public static func similarities(_ texts: [String: String], toVector target: [Double]) async -> [String: Double] {
         guard let embedding = NLEmbedding.sentenceEmbedding(for: .english) else { return [:] }
         var result: [String: Double] = [:]
         for (key, text) in texts {
@@ -37,11 +37,11 @@ enum Embedder {
         return result
     }
 
-    static func vector(_ text: String) -> [Double]? {
+    public static func vector(_ text: String) -> [Double]? {
         NLEmbedding.sentenceEmbedding(for: .english)?.vector(for: text)
     }
 
-    static func cosine(_ a: [Double], _ b: [Double]) -> Double {
+    public static func cosine(_ a: [Double], _ b: [Double]) -> Double {
         let denominator = (vDSP.sumOfSquares(a) * vDSP.sumOfSquares(b)).squareRoot()
         return denominator == 0 ? 0 : vDSP.dot(a, b) / denominator
     }

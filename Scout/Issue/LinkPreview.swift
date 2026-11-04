@@ -5,6 +5,7 @@
 
 import Foundation
 import LinkPresentation
+import ScoutKit
 import UIKit
 
 /// Title and image for an issue entry, fetched with LinkPresentation and cached on the entry.

@@ -9,6 +9,7 @@
 
 import AppIntents
 import Foundation
+import ScoutKit
 import SwiftData
 
 /// What the card shows, saved by the main intent so the snippet intent can stay a pure read.

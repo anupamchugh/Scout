@@ -1,11 +1,11 @@
 //
 //  MatchingTests.swift
-//  ScoutTests
+//  ScoutKitTests
 //
 
 import Foundation
 import Testing
-@testable import Scout
+@testable import ScoutKit
 
 private let now = Date(timeIntervalSince1970: 1_800_000_000)
 private let lane = LaneSpec(name: "Swift concurrency", tags: ["swift", "concurrency", "ios"], theme: "Swift concurrency")

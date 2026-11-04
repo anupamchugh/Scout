@@ -13,6 +13,9 @@ settings:
     CODE_SIGN_STYLE: Automatic
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
+packages:
+  ScoutKit:
+    path: Packages/ScoutKit
 targets:
   Scout:
     type: application
@@ -21,6 +24,8 @@ targets:
     sources:
       - path: Scout
         excludes: ["Info.plist"]
+    dependencies:
+      - package: ScoutKit
     info:
       path: Scout/Info.plist
       properties:
@@ -56,11 +61,9 @@ targets:
     supportedDestinations: [iOS]
     sources:
       - path: Tests
-        excludes: ["Fixtures/**"]
-      - path: Tests/Fixtures
-        buildPhase: resources
     dependencies:
       - target: Scout
+      - package: ScoutKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.anupamchugh.scout.tests

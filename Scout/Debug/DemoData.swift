@@ -5,6 +5,7 @@
 
 #if DEBUG
 import Foundation
+import ScoutKit
 
 /// Obviously fictional writers for `-demoData` (UI tests). Not real people or posts.
 enum DemoData {

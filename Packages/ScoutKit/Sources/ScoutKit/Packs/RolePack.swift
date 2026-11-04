@@ -1,6 +1,6 @@
 //
 //  RolePack.swift
-//  Scout
+//  ScoutKit
 //
 //  A role pack says what to read, how to rank it and what to make, for one kind of scout.
 //  It is plain data: shareable as a .scoutpack JSON file and importable.
@@ -10,12 +10,12 @@ import CoreTransferable
 import Foundation
 import UniformTypeIdentifiers
 
-struct RolePack: Codable, Identifiable, Hashable, Sendable {
-    enum CardField: String, Codable, Sendable, CaseIterable {
+public struct RolePack: Codable, Identifiable, Hashable, Sendable {
+    public enum CardField: String, Codable, Sendable, CaseIterable {
         case avatar, bestPost, stats, tags, why, image
     }
 
-    enum Signal: String, Codable, Sendable, CaseIterable {
+    public enum Signal: String, Codable, Sendable, CaseIterable {
         /// On-device text embeddings against the lane theme.
         case semantic
         case tagOverlap
@@ -25,35 +25,35 @@ struct RolePack: Codable, Identifiable, Hashable, Sendable {
         case imageSimilarity
     }
 
-    enum Output: String, Codable, Sendable {
+    public enum Output: String, Codable, Sendable {
         case newsletterMarkdown
         case markdownAndHTML
         case moodboard
     }
 
-    struct PackLane: Codable, Hashable, Sendable {
-        var name: String
+    public struct PackLane: Codable, Hashable, Sendable {
+        public var name: String
         /// Medium tag slugs, or full feed URLs for any other RSS or Atom feed.
-        var sources: [String]
-        var theme: String
+        public var sources: [String]
+        public var theme: String
     }
 
-    var id: String
-    var name: String
+    public var id: String
+    public var name: String
     /// What the pack covers, including what it can't (platforms without public feeds).
-    var summary: String
-    var lanes: [PackLane]
-    var cardFields: [CardField]
-    var signals: [Signal]
-    var output: Output
+    public var summary: String
+    public var lanes: [PackLane]
+    public var cardFields: [CardField]
+    public var signals: [Signal]
+    public var output: Output
     /// How outreach notes should sound, passed to the model as an instruction.
-    var outreachStyle: String
+    public var outreachStyle: String
 
-    var isVisual: Bool { signals.contains(.imageSimilarity) }
+    public var isVisual: Bool { signals.contains(.imageSimilarity) }
 }
 
 extension RolePack {
-    static let engineering = RolePack(
+    public static let engineering = RolePack(
         id: "engineering-editor",
         name: "Engineering editor",
         summary: "Medium tag feeds, Hacker News and GitHub releases. Ranks by topic overlap, posts per week and recency. Makes a Markdown newsletter.",
@@ -74,7 +74,7 @@ extension RolePack {
         output: .newsletterMarkdown,
         outreachStyle: "Direct and technical. Name the specific idea from their post you'd like them to expand on.")
 
-    static let techWriter = RolePack(
+    public static let techWriter = RolePack(
         id: "tech-writer",
         name: "Tech writer / newsletter",
         summary: "Medium publication and author feeds plus Substack newsletters. Makes Markdown and HTML for Substack or Medium.",
@@ -91,7 +91,7 @@ extension RolePack {
         output: .markdownAndHTML,
         outreachStyle: "Warm and brief. Mention what their writing does well for readers, then the invitation.")
 
-    static let illustrator = RolePack(
+    public static let illustrator = RolePack(
         id: "illustrator",
         name: "Illustrator / painter",
         summary: "Art blogs with open RSS (Colossal, Muddy Colors, Hyperallergic). Add YouTube channels by channel ID, Substack or Are.na feeds. Ranks by how close images are to ones you liked. Instagram and Behance have no public feeds, so Scout can't read them.",
@@ -106,45 +106,45 @@ extension RolePack {
         output: .moodboard,
         outreachStyle: "Respectful and specific about the work itself. Never comment on the artist as a person.")
 
-    static let builtIns: [RolePack] = [.engineering, .techWriter, .illustrator]
+    public static let builtIns: [RolePack] = [.engineering, .techWriter, .illustrator]
 }
 
 extension UTType {
-    static let scoutPack = UTType(exportedAs: "com.anupamchugh.scout.pack", conformingTo: .json)
+    public static let scoutPack = UTType(exportedAs: "com.anupamchugh.scout.pack", conformingTo: .json)
 }
 
 extension RolePack: Transferable {
-    static var transferRepresentation: some TransferRepresentation {
+    public static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .scoutPack)
             .suggestedFileName { "\($0.id).scoutpack" }
     }
 }
 
-enum PackStore {
+public enum PackStore {
     private static let activeKey = "scout.activePack"
     private static let importedKey = "scout.importedPacks"
 
     /// Nil until the person picks a pack at onboarding.
-    static var activeID: String? {
+    public static var activeID: String? {
         get { UserDefaults.standard.string(forKey: activeKey) }
         set { UserDefaults.standard.set(newValue, forKey: activeKey) }
     }
 
-    static var imported: [RolePack] {
+    public static var imported: [RolePack] {
         get {
             UserDefaults.standard.data(forKey: importedKey).flatMap { try? JSONDecoder().decode([RolePack].self, from: $0) } ?? []
         }
         set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: importedKey) }
     }
 
-    static var all: [RolePack] { RolePack.builtIns + imported.filter { pack in !RolePack.builtIns.contains { $0.id == pack.id } } }
+    public static var all: [RolePack] { RolePack.builtIns + imported.filter { pack in !RolePack.builtIns.contains { $0.id == pack.id } } }
 
-    static func pack(id: String?) -> RolePack {
+    public static func pack(id: String?) -> RolePack {
         all.first { $0.id == id } ?? .engineering
     }
 
     /// Reads a .scoutpack file; an imported pack with a built-in's id replaces nothing and is renamed.
-    static func importPack(from url: URL) throws -> RolePack {
+    public static func importPack(from url: URL) throws -> RolePack {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         var pack = try JSONDecoder().decode(RolePack.self, from: Data(contentsOf: url))

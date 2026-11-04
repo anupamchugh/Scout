@@ -3,6 +3,7 @@
 //  Scout
 //
 
+import ScoutKit
 import SwiftUI
 
 /// One post, in the writer card's style: title large, every tag as a chip, the author line small.

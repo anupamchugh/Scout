@@ -6,6 +6,7 @@
 import Foundation
 import Observation
 import os
+import ScoutKit
 import SwiftData
 
 enum DeckWindow: String, CaseIterable, Identifiable, Sendable {
