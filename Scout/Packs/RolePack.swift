@@ -1,0 +1,155 @@
+//
+//  RolePack.swift
+//  Scout
+//
+//  A role pack says what to read, how to rank it and what to make, for one kind of scout.
+//  It is plain data: shareable as a .scoutpack JSON file and importable.
+//
+
+import CoreTransferable
+import Foundation
+import UniformTypeIdentifiers
+
+struct RolePack: Codable, Identifiable, Hashable, Sendable {
+    enum CardField: String, Codable, Sendable, CaseIterable {
+        case avatar, bestPost, stats, tags, why, image
+    }
+
+    enum Signal: String, Codable, Sendable, CaseIterable {
+        /// On-device text embeddings against the lane theme.
+        case semantic
+        case tagOverlap
+        case postsPerWeek
+        case recency
+        /// Vision feature-print distance to images you swiped right on.
+        case imageSimilarity
+    }
+
+    enum Output: String, Codable, Sendable {
+        case newsletterMarkdown
+        case markdownAndHTML
+        case moodboard
+    }
+
+    struct PackLane: Codable, Hashable, Sendable {
+        var name: String
+        /// Medium tag slugs, or full feed URLs for any other RSS or Atom feed.
+        var sources: [String]
+        var theme: String
+    }
+
+    var id: String
+    var name: String
+    /// What the pack covers, including what it can't (platforms without public feeds).
+    var summary: String
+    var lanes: [PackLane]
+    var cardFields: [CardField]
+    var signals: [Signal]
+    var output: Output
+    /// How outreach notes should sound, passed to the model as an instruction.
+    var outreachStyle: String
+
+    var isVisual: Bool { signals.contains(.imageSimilarity) }
+}
+
+extension RolePack {
+    static let engineering = RolePack(
+        id: "engineering-editor",
+        name: "Engineering editor",
+        summary: "Medium tag feeds, Hacker News and GitHub releases. Ranks by topic overlap, posts per week and recency. Makes a Markdown newsletter.",
+        lanes: [
+            PackLane(name: "Swift concurrency", sources: ["swift", "swiftui", "ios", "concurrency", "ios-development"],
+                     theme: "Swift concurrency, async await, actors, structured concurrency, SwiftUI and iOS app architecture"),
+            PackLane(name: "Coffee Bytes", sources: ["software-engineering", "programming", "artificial-intelligence", "llm", "web-development"],
+                     theme: "Practical software engineering, developer tools, AI for programmers and lessons from shipping code"),
+            PackLane(name: "Hacker News", sources: ["https://news.ycombinator.com/rss"],
+                     theme: "What programmers are reading and discussing today"),
+            PackLane(name: "Show HN builders", sources: ["https://news.ycombinator.com/showrss"],
+                     theme: "Builders showing projects they made: tools, apps and libraries"),
+            PackLane(name: "Swift releases", sources: ["https://github.com/swiftlang/swift/releases.atom"],
+                     theme: "Swift toolchain releases and snapshots"),
+        ],
+        cardFields: [.avatar, .bestPost, .stats, .tags, .why],
+        signals: [.semantic, .tagOverlap, .postsPerWeek, .recency],
+        output: .newsletterMarkdown,
+        outreachStyle: "Direct and technical. Name the specific idea from their post you'd like them to expand on.")
+
+    static let techWriter = RolePack(
+        id: "tech-writer",
+        name: "Tech writer / newsletter",
+        summary: "Medium publication and author feeds plus Substack newsletters. Makes Markdown and HTML for Substack or Medium.",
+        lanes: [
+            PackLane(name: "Better Programming", sources: ["https://medium.com/feed/better-programming"],
+                     theme: "Advice for programmers: craft, careers and tools"),
+            PackLane(name: "Engineering newsletters", sources: ["https://newsletter.pragmaticengineer.com/feed"],
+                     theme: "How engineering teams work, hire and ship"),
+            PackLane(name: "Writing about code", sources: ["programming", "technology", "software-development"],
+                     theme: "Clear explanations of programming ideas for a broad audience"),
+        ],
+        cardFields: [.avatar, .bestPost, .stats, .tags, .why],
+        signals: [.semantic, .tagOverlap, .postsPerWeek, .recency],
+        output: .markdownAndHTML,
+        outreachStyle: "Warm and brief. Mention what their writing does well for readers, then the invitation.")
+
+    static let illustrator = RolePack(
+        id: "illustrator",
+        name: "Illustrator / painter",
+        summary: "Art blogs with open RSS (Colossal, Muddy Colors, Hyperallergic). Add YouTube channels by channel ID, Substack or Are.na feeds. Ranks by how close images are to ones you liked. Instagram and Behance have no public feeds, so Scout can't read them.",
+        lanes: [
+            PackLane(name: "Contemporary art", sources: ["https://www.thisiscolossal.com/feed/", "https://hyperallergic.com/feed/"],
+                     theme: "Contemporary art, sculpture, painting and installation"),
+            PackLane(name: "Illustration", sources: ["https://www.muddycolors.com/feed/"],
+                     theme: "Illustration, concept art and painting technique"),
+        ],
+        cardFields: [.image, .bestPost, .tags, .why],
+        signals: [.imageSimilarity, .tagOverlap, .recency],
+        output: .moodboard,
+        outreachStyle: "Respectful and specific about the work itself. Never comment on the artist as a person.")
+
+    static let builtIns: [RolePack] = [.engineering, .techWriter, .illustrator]
+}
+
+extension UTType {
+    static let scoutPack = UTType(exportedAs: "com.anupamchugh.scout.pack", conformingTo: .json)
+}
+
+extension RolePack: Transferable {
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .scoutPack)
+            .suggestedFileName { "\($0.id).scoutpack" }
+    }
+}
+
+enum PackStore {
+    private static let activeKey = "scout.activePack"
+    private static let importedKey = "scout.importedPacks"
+
+    /// Nil until the person picks a pack at onboarding.
+    static var activeID: String? {
+        get { UserDefaults.standard.string(forKey: activeKey) }
+        set { UserDefaults.standard.set(newValue, forKey: activeKey) }
+    }
+
+    static var imported: [RolePack] {
+        get {
+            UserDefaults.standard.data(forKey: importedKey).flatMap { try? JSONDecoder().decode([RolePack].self, from: $0) } ?? []
+        }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: importedKey) }
+    }
+
+    static var all: [RolePack] { RolePack.builtIns + imported.filter { pack in !RolePack.builtIns.contains { $0.id == pack.id } } }
+
+    static func pack(id: String?) -> RolePack {
+        all.first { $0.id == id } ?? .engineering
+    }
+
+    /// Reads a .scoutpack file; an imported pack with a built-in's id replaces nothing and is renamed.
+    static func importPack(from url: URL) throws -> RolePack {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        var pack = try JSONDecoder().decode(RolePack.self, from: Data(contentsOf: url))
+        if RolePack.builtIns.contains(where: { $0.id == pack.id }) { pack.id += "-imported" }
+        imported = imported.filter { $0.id != pack.id } + [pack]
+        return pack
+    }
+}

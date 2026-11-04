@@ -9,7 +9,7 @@ enum RSSParserError: Error, Equatable {
     case malformed(String)
 }
 
-/// Parses Medium's RSS 2.0 feeds with `XMLParser`.
+/// Parses RSS 2.0 (Medium, Hacker News, blogs, Substack) and Atom (GitHub releases, YouTube) with one `XMLParser`.
 final class RSSParser: NSObject, XMLParserDelegate {
 
     static func parse(_ data: Data) throws -> [FeedItem] {
@@ -35,22 +35,50 @@ final class RSSParser: NSObject, XMLParserDelegate {
     private var text = ""
     private var inItem = false
 
-    private let dateFormatter: DateFormatter = {
+    /// RFC 822 dates, with a zone name ("GMT", Medium) or an offset ("+0000", Hacker News).
+    private let rfc822: [DateFormatter] = ["EEE, dd MMM yyyy HH:mm:ss zzz", "EEE, dd MMM yyyy HH:mm:ss Z"].map {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        formatter.dateFormat = $0
         return formatter
-    }()
+    }
+
+    private func date(_ fields: [String: String]) -> Date? {
+        if let text = fields["pubDate"] {
+            return rfc822.lazy.compactMap { $0.date(from: text) }.first
+        }
+        guard let text = fields["published"] ?? fields["updated"] else { return nil }
+        return (try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(text))
+            ?? (try? Date.ISO8601FormatStyle().parse(text))
+    }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
                 qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
         if elementName == "image" && !inItem {
             inChannelImage = true
         }
-        if elementName == "item" {
+        if elementName == "item" || elementName == "entry" {
             inItem = true
             fields = [:]
             categories = []
+        }
+        if inItem {
+            // Atom keeps its link, categories and thumbnails in attributes.
+            switch elementName {
+            case "link" where attributeDict["href"] != nil:
+                let rel = attributeDict["rel"] ?? "alternate"
+                if rel == "alternate" && fields["link"] == nil { fields["link"] = attributeDict["href"] }
+            case "category":
+                if let term = attributeDict["term"], !term.isEmpty { categories.append(term) }
+            case "media:thumbnail", "media:content":
+                if fields["media"] == nil, let url = attributeDict["url"] { fields["media"] = url }
+            case "enclosure":
+                if fields["media"] == nil, attributeDict["type"]?.hasPrefix("image") == true, let url = attributeDict["url"] {
+                    fields["media"] = url
+                }
+            default:
+                break
+            }
         }
         text = ""
     }
@@ -74,13 +102,16 @@ final class RSSParser: NSObject, XMLParserDelegate {
         guard inItem else { return }
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
         switch elementName {
-        case "item":
+        case "item", "entry":
             inItem = false
             if let item = makeItem() { items.append(item) }
         case "category":
             if !value.isEmpty { categories.append(value) }
+        case "name":
+            if fields["dc:creator"] == nil, !value.isEmpty { fields["dc:creator"] = value }
         default:
-            fields[elementName] = value
+            // An attribute-only element (Atom's <link href>) must not wipe the value read from its attributes.
+            if !value.isEmpty || fields[elementName] == nil { fields[elementName] = value }
         }
         text = ""
     }
@@ -88,14 +119,15 @@ final class RSSParser: NSObject, XMLParserDelegate {
     private func makeItem() -> FeedItem? {
         guard let title = fields["title"].map(HTMLText.decodeEntities), !title.isEmpty,
               let link = fields["link"].flatMap(URL.init(string:)),
-              let guid = fields["guid"], !guid.isEmpty,
-              let published = fields["pubDate"].flatMap(dateFormatter.date(from:))
+              let published = date(fields)
         else { return nil }
+        // Hacker News items have no guid; their comments URL is unique.
+        let guid = [fields["guid"], fields["id"], fields["comments"], fields["link"]].compactMap { $0 }.first { !$0.isEmpty }!
 
-        let description = fields["description"] ?? ""
-        let content = fields["content:encoded"]
+        let description = fields["description"] ?? fields["summary"] ?? ""
+        let content = fields["content:encoded"] ?? fields["content"]
         let snippet = HTMLText.snippet(description: description, content: content)
-        let image = HTMLText.firstImage(in: content ?? description)
+        let image = fields["media"].flatMap(URL.init(string:)) ?? HTMLText.firstImage(in: content ?? description)
 
         return FeedItem(
             guid: guid,
@@ -121,13 +153,14 @@ enum HTMLText {
             return plainText(teaser)
         }
         let html = content ?? description
-        for pattern in [#"<h4>(.*?)</h4>"#, #"<p>(.*?)</p>"#] {
+        for pattern in [#"<h4>(.*?)</h4>"#, #"<p[^>]*>(.*?)</p>"#] {
             if let match = firstMatch(pattern, in: html) {
                 let text = plainText(match)
                 if !text.isEmpty { return text }
             }
         }
-        return ""
+        let text = plainText(html)
+        return text == "Comments" ? "" : String(text.prefix(280))
     }
 
     static func firstImage(in html: String) -> URL? {

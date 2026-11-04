@@ -27,6 +27,7 @@ struct PostRecord: Sendable, Hashable {
     var foundUnder: [String]
     var published: Date
     var readingMinutes: Int?
+    var imageURL: String? = nil
 
     var topics: Set<String> { Set(categories).union(foundUnder) }
 }

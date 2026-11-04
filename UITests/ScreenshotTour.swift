@@ -24,6 +24,7 @@ final class ScreenshotTour: XCTestCase {
     func testTour() throws {
         try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")
         let app = XCUIApplication()
+        app.launchArguments = ["-pack", "engineering-editor"]
         app.launch()
 
         let card = app.otherElements["deck.card"].firstMatch
@@ -76,9 +77,34 @@ final class ScreenshotTour: XCTestCase {
     func testSiriCardStage() throws {
         try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")
         let app = XCUIApplication()
-        app.launchArguments = ["-siriCardStage"]
+        app.launchArguments = ["-siriCardStage", "-pack", "engineering-editor"]
         app.launch()
         XCTAssertTrue(app.buttons["Open deck"].waitForExistence(timeout: 90))
         shoot("08-siri-card-stage")
+    }
+
+    @MainActor
+    func testPacks() throws {
+        try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")
+        let app = XCUIApplication()
+        app.launchArguments = ["-choosePack"]
+        app.launch()
+        XCTAssertTrue(app.buttons["pack.illustrator"].waitForExistence(timeout: 20))
+        sleep(1)
+        shoot("09-pack-picker")
+        app.buttons["pack.illustrator"].tap()
+
+        app.segmentedControls["today.mode"].buttons["Stories"].tap()
+        let appeared = app.otherElements["deck.card"].firstMatch.waitForExistence(timeout: 90)
+        if !appeared { shoot("debug-illustrator") }
+        XCTAssertTrue(appeared)
+        sleep(8)
+        shoot("10-illustrator-stories")
+
+        app.buttons["deck.shortlist"].tap()
+        sleep(2)
+        app.buttons["today.packChip"].tap()
+        sleep(2)
+        shoot("11-settings-pack-taste")
     }
 }

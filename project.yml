@@ -20,6 +20,16 @@ targets:
     supportedDestinations: [iOS]
     sources:
       - path: Scout
+        excludes: ["Info.plist"]
+    info:
+      path: Scout/Info.plist
+      properties:
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.anupamchugh.scout.pack
+            UTTypeDescription: Scout role pack
+            UTTypeConformsTo: [public.json]
+            UTTypeTagSpecification:
+              public.filename-extension: [scoutpack]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.anupamchugh.scout

@@ -10,13 +10,35 @@ enum FeedSource: Sendable, Hashable {
     case tag(String)
     case author(String)
     case publication(String)
+    /// Any RSS or Atom feed: Hacker News, a blog, Substack, GitHub releases, a YouTube channel.
+    case feed(URL)
 
     var url: URL {
         switch self {
         case .tag(let slug): URL(string: "https://medium.com/feed/tag/\(slug)")!
         case .author(let handle): URL(string: "https://medium.com/feed/@\(handle)")!
         case .publication(let slug): URL(string: "https://medium.com/feed/\(slug)")!
+        case .feed(let url): url
         }
+    }
+
+    /// The key lanes use for this source: a Medium tag slug, or the feed URL for any other feed.
+    var laneKey: String? {
+        switch self {
+        case .tag(let slug): slug
+        case .feed(let url): url.absoluteString
+        case .author, .publication: nil
+        }
+    }
+
+    /// A lane key back to its feed: URLs are feeds, anything else is a Medium tag.
+    init(laneKey: String) {
+        if laneKey.hasPrefix("http"), let url = URL(string: laneKey) { self = .feed(url) } else { self = .tag(laneKey) }
+    }
+
+    /// How a lane key reads on screen: a tag as is, a feed by its host.
+    static func displayName(_ laneKey: String) -> String {
+        laneKey.hasPrefix("http") ? (URL(string: laneKey)?.host() ?? laneKey).replacingOccurrences(of: "www.", with: "") : laneKey
     }
 
     /// The watched tag this feed belongs to, if it is a tag feed.
@@ -29,6 +51,7 @@ enum FeedSource: Sendable, Hashable {
         case .tag(let slug): "#\(slug)"
         case .author(let handle): "@\(handle)"
         case .publication(let slug): slug
+        case .feed(let url): url.host() ?? url.absoluteString
         }
     }
 }

@@ -16,12 +16,15 @@
 		16C37E2CD3E2091718CB07C4 /* StoryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62AE8CFEE7D6018414293AD6 /* StoryCard.swift */; };
 		1BFC519A51F6D1959A1EEAF6 /* PitchReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957E0A8D0F935C259948A140 /* PitchReader.swift */; };
 		1CB8005401FA536B0CD027BB /* SwipeDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD91E5A82B9B1D5DBA7AD9CF /* SwipeDeck.swift */; };
+		3251FC8043550DA4DA023C25 /* PackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742AFDFCBC61115E0C0B610B /* PackTests.swift */; };
 		3E84C5D6A8C928508EBD8AFB /* FeedCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C73C57E0FE5F72B0C29F43F /* FeedCache.swift */; };
 		4A795EA872EFE19999CD869D /* SpotlightIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 363B6271F677B2FD69162CC0 /* SpotlightIndex.swift */; };
 		4CCB6997B31A4BABF2DE7258 /* IssueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504B9A63924006A2AD1A5553 /* IssueTests.swift */; };
 		56AABEB3CB9869B156717465 /* StoriesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68A9BFBEB3E60E237A06AA69 /* StoriesTests.swift */; };
 		56D89F37E9C5F301C5B7D0D4 /* RSSParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC8C3443682567DEB181474 /* RSSParserTests.swift */; };
 		631212556C903F7E5E26A4C4 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1632CE38968C64DB6C1E02B /* Store.swift */; };
+		6732C9B760DCA3A9247B6288 /* ImageTaste.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8AA54B62D1B81F43337ABEC /* ImageTaste.swift */; };
+		6E2A82EEF31A49FBBD42B975 /* ScoutProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001FE182B28AE926E7C3BA34 /* ScoutProfile.swift */; };
 		74F14F4A3A830CB4AE919E50 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E099988DC91DED97B18CA4 /* SearchView.swift */; };
 		789D9C4759A6D29EDF2A7F11 /* ScoutApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B05A33D42DFC47E9C54BEE0 /* ScoutApp.swift */; };
 		85B694654037EF9C27946559 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 40896C5C3766C4916251E5A6 /* Assets.xcassets */; };
@@ -30,8 +33,10 @@
 		8D027E61464AB56ABAB02B70 /* ShortlistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA8DD89169184EB15751A65 /* ShortlistView.swift */; };
 		8E1C940F854026F0FD05DB75 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCAC66FDB8F6F331BEA5BED /* Theme.swift */; };
 		945D660F191EEF660DD9F437 /* DeckUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2108523A4CF401DED4B01C39 /* DeckUITests.swift */; };
+		9A3D210771FD7C49A3A6B1A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A786F2CF4C0CE2A22F1BB73 /* SettingsView.swift */; };
 		9DF96C5B3192709E5AAA7E02 /* ScoutSiriCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27A51BDA15608FEECCABBB4 /* ScoutSiriCard.swift */; };
 		A0DD01BE2726D67AE8D8949A /* SiriCardStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749A7E2AD3EDEFECCED67C5 /* SiriCardStage.swift */; };
+		B0E08C8C0135F523BE56F454 /* Taste.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41E223F07804F45A5A27A19E /* Taste.swift */; };
 		BE513AA08F7456036C31206A /* salari-dev-2026-11-05.xml in Resources */ = {isa = PBXBuildFile; fileRef = BF0E6C5F10004FDAEFFEF82A /* salari-dev-2026-11-05.xml */; };
 		C2EB27B5CEDF32DDF92C1939 /* IssueEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */; };
 		C39ADC58C9E80625AEE102ED /* Matching.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B7193B98DEC79B141882FC /* Matching.swift */; };
@@ -42,6 +47,7 @@
 		DC4E987E09E75E73747E0E53 /* ScoutModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE83005E807D1270C1D70A3 /* ScoutModel.swift */; };
 		E5EC4A17D745FB73F1FA7792 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3733B4D5976AD15A921E225 /* Models.swift */; };
 		EB5C25B5A629AC03EED5AFA5 /* RSSParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650C93BA811B35D59376E499 /* RSSParser.swift */; };
+		FB88AA154E27434A61A1E961 /* RolePack.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA70D10A2513D644F1065909 /* RolePack.swift */; };
 		FB9936E28F19395696582EEC /* Writer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71263DFB15DCD5CB576BACE4 /* Writer.swift */; };
 /* End PBXBuildFile section */
 
@@ -63,6 +69,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		001FE182B28AE926E7C3BA34 /* ScoutProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutProfile.swift; sourceTree = "<group>"; };
 		0DCEA4448018D8F1DACACAE8 /* AuthorStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorStats.swift; sourceTree = "<group>"; };
 		17807A002C04E20022167DC2 /* ScoutTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ScoutTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		193D55DF2403859721C1DEEA /* MatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchingTests.swift; sourceTree = "<group>"; };
@@ -74,6 +81,7 @@
 		35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueEditorView.swift; sourceTree = "<group>"; };
 		363B6271F677B2FD69162CC0 /* SpotlightIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndex.swift; sourceTree = "<group>"; };
 		40896C5C3766C4916251E5A6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		41E223F07804F45A5A27A19E /* Taste.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Taste.swift; sourceTree = "<group>"; };
 		4BA8DD89169184EB15751A65 /* ShortlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortlistView.swift; sourceTree = "<group>"; };
 		504B9A63924006A2AD1A5553 /* IssueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueTests.swift; sourceTree = "<group>"; };
 		5773F3DB5DC5D621BBAA0F30 /* DemoData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoData.swift; sourceTree = "<group>"; };
@@ -82,16 +90,20 @@
 		650C93BA811B35D59376E499 /* RSSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSParser.swift; sourceTree = "<group>"; };
 		68A9BFBEB3E60E237A06AA69 /* StoriesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoriesTests.swift; sourceTree = "<group>"; };
 		71263DFB15DCD5CB576BACE4 /* Writer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Writer.swift; sourceTree = "<group>"; };
+		742AFDFCBC61115E0C0B610B /* PackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackTests.swift; sourceTree = "<group>"; };
 		809392D824B6E64401F3CCBF /* FeedClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedClient.swift; sourceTree = "<group>"; };
 		914746B09EB0DB861235C499 /* LinkPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreview.swift; sourceTree = "<group>"; };
 		957E0A8D0F935C259948A140 /* PitchReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchReader.swift; sourceTree = "<group>"; };
 		9A4C6E431C9C6C84DB08481C /* Scout.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Scout.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9A786F2CF4C0CE2A22F1BB73 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A1632CE38968C64DB6C1E02B /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		A9ED0147405718AC9DCE621B /* AuthorCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorCard.swift; sourceTree = "<group>"; };
 		B30D3A0A6715141C40A5B63E /* ScoutUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ScoutUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BA70D10A2513D644F1065909 /* RolePack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RolePack.swift; sourceTree = "<group>"; };
 		BCE83005E807D1270C1D70A3 /* ScoutModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutModel.swift; sourceTree = "<group>"; };
 		BF0E6C5F10004FDAEFFEF82A /* salari-dev-2026-11-05.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "salari-dev-2026-11-05.xml"; sourceTree = "<group>"; };
 		C420E836BC697A2D2F868602 /* FeedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItem.swift; sourceTree = "<group>"; };
+		C8AA54B62D1B81F43337ABEC /* ImageTaste.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTaste.swift; sourceTree = "<group>"; };
 		D27A51BDA15608FEECCABBB4 /* ScoutSiriCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutSiriCard.swift; sourceTree = "<group>"; };
 		DFCAC66FDB8F6F331BEA5BED /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		E33FC9097E7A5FDC57913F31 /* IssueRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueRenderer.swift; sourceTree = "<group>"; };
@@ -155,6 +167,7 @@
 			children = (
 				0DCEA4448018D8F1DACACAE8 /* AuthorStats.swift */,
 				F8B7193B98DEC79B141882FC /* Matching.swift */,
+				41E223F07804F45A5A27A19E /* Taste.swift */,
 			);
 			path = Scoring;
 			sourceTree = "<group>";
@@ -169,6 +182,7 @@
 				D29E3265B4C642C428108BED /* Feed */,
 				DE0A8A775D780992EF75D236 /* Intelligence */,
 				87E9D957E9BC5B693D9256A5 /* Issue */,
+				8C5F89EB2FB6EEBE76460FB9 /* Packs */,
 				0B1C6E5081E39F2CA94E0734 /* Pitch */,
 				6B8A92F868A13D3179D659D5 /* Scoring */,
 				0EFE31161EDE6C2E183BB638 /* Search */,
@@ -185,6 +199,7 @@
 				A9ED0147405718AC9DCE621B /* AuthorCard.swift */,
 				35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */,
 				59E099988DC91DED97B18CA4 /* SearchView.swift */,
+				9A786F2CF4C0CE2A22F1BB73 /* SettingsView.swift */,
 				4BA8DD89169184EB15751A65 /* ShortlistView.swift */,
 				62AE8CFEE7D6018414293AD6 /* StoryCard.swift */,
 				FD91E5A82B9B1D5DBA7AD9CF /* SwipeDeck.swift */,
@@ -200,6 +215,14 @@
 				914746B09EB0DB861235C499 /* LinkPreview.swift */,
 			);
 			path = Issue;
+			sourceTree = "<group>";
+		};
+		8C5F89EB2FB6EEBE76460FB9 /* Packs */ = {
+			isa = PBXGroup;
+			children = (
+				BA70D10A2513D644F1065909 /* RolePack.swift */,
+			);
+			path = Packs;
 			sourceTree = "<group>";
 		};
 		9AE1FE0C918A5A3F0B31DCE3 /* Store */ = {
@@ -243,6 +266,8 @@
 			isa = PBXGroup;
 			children = (
 				28A104E91B472B58D005C9F9 /* Embedder.swift */,
+				C8AA54B62D1B81F43337ABEC /* ImageTaste.swift */,
+				001FE182B28AE926E7C3BA34 /* ScoutProfile.swift */,
 				71263DFB15DCD5CB576BACE4 /* Writer.swift */,
 			);
 			path = Intelligence;
@@ -270,6 +295,7 @@
 			children = (
 				504B9A63924006A2AD1A5553 /* IssueTests.swift */,
 				193D55DF2403859721C1DEEA /* MatchingTests.swift */,
+				742AFDFCBC61115E0C0B610B /* PackTests.swift */,
 				1DC8C3443682567DEB181474 /* RSSParserTests.swift */,
 				68A9BFBEB3E60E237A06AA69 /* StoriesTests.swift */,
 				AFDF50867B9AFE00F0A54348 /* Fixtures */,
@@ -420,6 +446,7 @@
 				3E84C5D6A8C928508EBD8AFB /* FeedCache.swift in Sources */,
 				873AD4A9251CF4EAAC7B181B /* FeedClient.swift in Sources */,
 				014983322707A9BD360B6531 /* FeedItem.swift in Sources */,
+				6732C9B760DCA3A9247B6288 /* ImageTaste.swift in Sources */,
 				C2EB27B5CEDF32DDF92C1939 /* IssueEditorView.swift in Sources */,
 				1408621B7B96AB12162E1C0B /* IssueRenderer.swift in Sources */,
 				8996CF3A1C0B52D8651A1913 /* LinkPreview.swift in Sources */,
@@ -427,17 +454,21 @@
 				E5EC4A17D745FB73F1FA7792 /* Models.swift in Sources */,
 				1BFC519A51F6D1959A1EEAF6 /* PitchReader.swift in Sources */,
 				EB5C25B5A629AC03EED5AFA5 /* RSSParser.swift in Sources */,
+				FB88AA154E27434A61A1E961 /* RolePack.swift in Sources */,
 				789D9C4759A6D29EDF2A7F11 /* ScoutApp.swift in Sources */,
 				DBB18FE2CAD673137B1F63A2 /* ScoutIntents.swift in Sources */,
 				DC4E987E09E75E73747E0E53 /* ScoutModel.swift in Sources */,
+				6E2A82EEF31A49FBBD42B975 /* ScoutProfile.swift in Sources */,
 				9DF96C5B3192709E5AAA7E02 /* ScoutSiriCard.swift in Sources */,
 				74F14F4A3A830CB4AE919E50 /* SearchView.swift in Sources */,
+				9A3D210771FD7C49A3A6B1A1 /* SettingsView.swift in Sources */,
 				8D027E61464AB56ABAB02B70 /* ShortlistView.swift in Sources */,
 				A0DD01BE2726D67AE8D8949A /* SiriCardStage.swift in Sources */,
 				4A795EA872EFE19999CD869D /* SpotlightIndex.swift in Sources */,
 				631212556C903F7E5E26A4C4 /* Store.swift in Sources */,
 				16C37E2CD3E2091718CB07C4 /* StoryCard.swift in Sources */,
 				1CB8005401FA536B0CD027BB /* SwipeDeck.swift in Sources */,
+				B0E08C8C0135F523BE56F454 /* Taste.swift in Sources */,
 				8E1C940F854026F0FD05DB75 /* Theme.swift in Sources */,
 				1677402F75A3BF20B004D732 /* TodayView.swift in Sources */,
 				FB9936E28F19395696582EEC /* Writer.swift in Sources */,
@@ -450,6 +481,7 @@
 			files = (
 				4CCB6997B31A4BABF2DE7258 /* IssueTests.swift in Sources */,
 				CFAAACE641AA0CDCBA8C9B75 /* MatchingTests.swift in Sources */,
+				3251FC8043550DA4DA023C25 /* PackTests.swift in Sources */,
 				56D89F37E9C5F301C5B7D0D4 /* RSSParserTests.swift in Sources */,
 				56AABEB3CB9869B156717465 /* StoriesTests.swift in Sources */,
 			);
@@ -591,6 +623,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Scout/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Scout;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.news";
@@ -687,6 +720,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Scout/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Scout;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.news";

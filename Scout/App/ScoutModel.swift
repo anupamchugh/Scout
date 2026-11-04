@@ -5,6 +5,7 @@
 
 import Foundation
 import Observation
+import os
 import SwiftData
 
 enum DeckWindow: String, CaseIterable, Identifiable, Sendable {
@@ -29,6 +30,8 @@ enum DeckMode: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 }
 
+private let log = Logger(subsystem: "com.anupamchugh.scout", category: "deck")
+
 @Observable
 @MainActor
 final class ScoutModel {
@@ -37,7 +40,10 @@ final class ScoutModel {
     var context: ModelContext { container.mainContext }
 
     var window: DeckWindow = .week
-    var activeLaneName: String = ScoutStore.defaultLanes[0].name
+    private(set) var activePack: RolePack = PackStore.pack(id: PackStore.activeID)
+    var activeLaneName: String = PackStore.pack(id: PackStore.activeID).lanes.first?.name ?? ""
+    /// True until the person picks a role pack (onboarding).
+    var needsPackChoice: Bool { PackStore.activeID == nil && !usesDemoData }
     var mode: DeckMode = {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-stories") { return .stories }
@@ -58,15 +64,47 @@ final class ScoutModel {
     /// "Why this writer" lines that passed `TextGuard`, by author key.
     private(set) var whyLines: [String: String] = [:]
     private var whyRequested: Set<String> = []
+    private var loadGeneration = 0
 
     init(container: ModelContainer, usesDemoData: Bool) {
         self.container = container
         self.usesDemoData = usesDemoData
-        ScoutStore.seedIfNeeded(container.mainContext)
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        // Demo data only covers Medium tags, so it starts on the Engineering pack whatever was saved.
+        if usesDemoData {
+            activePack = .engineering
+            activeLaneName = activePack.lanes.first?.name ?? ""
+        }
+        // -choosePack: show the onboarding pack picker again.
+        if args.contains("-choosePack") { PackStore.activeID = nil }
+        if let i = args.firstIndex(of: "-pack"), i + 1 < args.count {
+            PackStore.activeID = args[i + 1]
+            activePack = PackStore.pack(id: args[i + 1])
+            activeLaneName = activePack.lanes.first?.name ?? ""
+        }
+        #endif
+        ScoutStore.seedIfNeeded(container.mainContext, pack: activePack)
+        Writer.pack = activePack
+        Writer.container = container
+    }
+
+    func switchPack(to pack: RolePack) {
+        PackStore.activeID = pack.id
+        // Choosing the pack already in use (the onboarding default, say) must not empty a deck that won't reload.
+        guard pack.id != activePack.id else { return }
+        activePack = pack
+        ScoutStore.seedLanes(for: pack, in: context)
+        activeLaneName = lanes.first?.name ?? ""
+        Writer.pack = pack
+        deck = []
+        storyDeck = []
     }
 
     var lanes: [Lane] {
-        (try? context.fetch(FetchDescriptor<Lane>(sortBy: [SortDescriptor(\.position)]))) ?? []
+        let id = activePack.id
+        return (try? context.fetch(FetchDescriptor<Lane>(predicate: #Predicate { $0.packID == id },
+                                                        sortBy: [SortDescriptor(\.position)]))) ?? []
     }
 
     var activeLane: LaneSpec {
@@ -83,7 +121,7 @@ final class ScoutModel {
         let name = pair.label
         guard !lanes.contains(where: { $0.name == name }) else { return }
         context.insert(Lane(name: name, tags: [pair.first, pair.second], theme: "\(pair.first) and \(pair.second)",
-                            position: (lanes.map(\.position).max() ?? -1) + 1))
+                            position: (lanes.map(\.position).max() ?? -1) + 1, packID: activePack.id))
         try? context.save()
         activeLaneName = name
     }
@@ -94,12 +132,17 @@ final class ScoutModel {
     /// Called from `.task(id:)`, so changing the lane or window cancels a load in progress.
     func loadDeck() async {
         let lane = activeLane
+        // A newer load (lane, window or pack changed) owns the loading flag; a cancelled one must not clear it.
+        loadGeneration += 1
+        let generation = loadGeneration
         isLoading = true
-        defer { isLoading = false }
+        defer { if generation == loadGeneration { isLoading = false } }
+        log.info("load \(generation) start pack=\(self.activePack.id, privacy: .public) lane=\(lane.name, privacy: .public) keys=\(lane.tags.count)")
 
         // Every lane's feeds, so a story's "surfaced by N lanes" signal sees all of them.
         let allTags = Set(laneSpecs.flatMap(\.tags)).union(lane.tags)
-        let report = await fetch(allTags.sorted().map(FeedSource.tag))
+        let report = await fetch(allTags.sorted().map(FeedSource.init(laneKey:)))
+        log.info("load \(generation) fetched \(report.items.values.map(\.count).reduce(0, +)) items, failures=\(report.failures.count) cancelled=\(Task.isCancelled)")
         guard !Task.isCancelled else { return }
         failedFeeds = report.failures.keys.map(\.label).sorted()
         _ = try? Ingest.upsert(report, into: context)
@@ -120,14 +163,71 @@ final class ScoutModel {
 
         let avatars = Dictionary(((try? context.fetch(FetchDescriptor<AuthorInfo>())) ?? []).map { ($0.authorKey, $0.avatarURL) },
                                  uniquingKeysWith: { first, _ in first })
-        deck = candidates.prefix(30).map { candidate in
-            var candidate = candidate
-            candidate.avatarURL = avatars[candidate.authorKey].flatMap { $0 }.flatMap(URL.init(string:))
-            return candidate
-        }
-        storyDeck = Array(await rankStories(lane).prefix(40))
+        let stories = await rankStories(lane)
         guard !Task.isCancelled else { return }
+
+        // Taste from past swipes in this pack shifts the scores, in code. Tag weights apply at once; the deck
+        // re-sorts when similarity to liked items (image downloads for visual packs) arrives.
+        let record = ScoutStore.taste(for: activePack, in: context)
+        let taste = record.taste
+        func fill(writerSimilarity: [String: Double], storySimilarity: [String: Double]) {
+            deck = Matching.applyTaste(Array(candidates.prefix(40)), taste: taste, similarity: writerSimilarity).prefix(30).map { candidate in
+                var candidate = candidate
+                candidate.avatarURL = avatars[candidate.authorKey].flatMap { $0 }.flatMap(URL.init(string:))
+                return candidate
+            }
+            storyDeck = Array(Matching.applyTaste(Array(stories.prefix(60)), taste: taste, similarity: storySimilarity).prefix(40))
+        }
+        fill(writerSimilarity: [:], storySimilarity: [:])
+        log.info("load \(generation) filled writers=\(self.deck.count) stories=\(self.storyDeck.count) ranked=\(stories.count)")
         prefetchWhy()
+
+        let (writerSimilarity, storySimilarity) = await tasteSimilarity(writers: Array(candidates.prefix(20)),
+                                                                       stories: Array(stories.prefix(20)), record: record)
+        guard !Task.isCancelled, !(writerSimilarity.isEmpty && storySimilarity.isEmpty) else { return }
+        // Keep cards already on screen in place: only cards not yet swiped are re-sorted.
+        let remainingWriters = Set(deck.map(\.authorKey))
+        let remainingStories = Set(storyDeck.map(\.id))
+        fill(writerSimilarity: writerSimilarity, storySimilarity: storySimilarity)
+        deck.removeAll { !remainingWriters.contains($0.authorKey) }
+        storyDeck.removeAll { !remainingStories.contains($0.id) }
+    }
+
+    /// Similarity to what you liked: Vision feature prints of images for visual packs,
+    /// the text-embedding centroid of liked items for the others.
+    private func tasteSimilarity(writers: [AuthorCandidate], stories: [StoryCandidate],
+                                 record: TasteRecord) async -> ([String: Double], [String: Double]) {
+        if activePack.isVisual {
+            let liked = record.likedPrints
+            guard !liked.isEmpty else { return ([:], [:]) }
+            var urls: [String: URL] = [:]
+            for post in stories.map(\.post) + writers.map(\.bestPost) {
+                if let image = post.imageURL.flatMap(URL.init(string:)) { urls[post.guid] = image }
+            }
+            let prints = await ImageTaste.prints(for: urls)
+            let byGuid = prints.compactMapValues { ImageTaste.similarity($0, toLiked: liked) }
+            return (Dictionary(uniqueKeysWithValues: writers.compactMap { w in byGuid[w.bestPost.guid].map { (w.authorKey, $0) } }), byGuid)
+        }
+        guard let centroid = record.taste.centroid else { return ([:], [:]) }
+        let writerTexts = Dictionary(uniqueKeysWithValues: writers.map { ($0.authorKey, $0.sourceText) })
+        let storyTexts = Dictionary(stories.map { ($0.id, "\($0.post.title). \($0.post.snippet)") }, uniquingKeysWith: { first, _ in first })
+        return (await Embedder.similarities(writerTexts, toVector: centroid), await Embedder.similarities(storyTexts, toVector: centroid))
+    }
+
+    /// One swipe updates this pack's taste: tag weights, the liked-text centroid, and for visual packs a feature print.
+    private func learn(tags: [String], text: String, imageURL: String?, liked: Bool) {
+        let record = ScoutStore.taste(for: activePack, in: context)
+        var taste = record.taste
+        taste.record(tags: tags, liked: liked, embedding: liked ? Embedder.vector(text) : nil)
+        record.taste = taste
+        try? context.save()
+        guard liked, activePack.isVisual, let url = imageURL.flatMap(URL.init(string:)) else { return }
+        Task {
+            if let print = await ImageTaste.featurePrint(for: url) {
+                record.likedPrints = Array((record.likedPrints + [print]).suffix(ImageTaste.keep))
+                try? context.save()
+            }
+        }
     }
 
     private func record(_ authors: FeedClient.Report) {
@@ -155,7 +255,8 @@ final class ScoutModel {
         let excluded = Set(picked + blocked)
         let texts = Dictionary(records.filter { !excluded.contains($0.guid) }.map { ($0.guid, "\($0.title). \($0.snippet)") },
                                uniquingKeysWith: { first, _ in first })
-        let semantic = await Embedder.similarities(texts, to: lane.theme)
+        // Visual packs match on images (through taste), not text embeddings.
+        let semantic = activePack.isVisual ? [:] : await Embedder.similarities(texts, to: lane.theme)
         suggestedPairs = TagCooccurrence.suggestions(records, existing: laneSpecs.map(\.tags))
         return Matching.stories(from: records, lane: lane, lanes: laneSpecs, semantic: semantic, excluding: excluded,
                                 now: now, window: window.seconds)
@@ -176,7 +277,7 @@ final class ScoutModel {
         let excluded = decidedOrBlocked()
         let texts = Dictionary(grouping: records.filter { !excluded.contains($0.authorKey) }, by: \.authorKey)
             .mapValues { $0.map { "\($0.title). \($0.snippet)" }.joined(separator: " ") }
-        let semantic = await Embedder.similarities(texts, to: lane.theme)
+        let semantic = activePack.isVisual ? [:] : await Embedder.similarities(texts, to: lane.theme)
         return Matching.candidates(from: records, lane: lane, semantic: semantic, excluding: excluded,
                                    now: now, window: window.seconds)
     }
@@ -184,7 +285,8 @@ final class ScoutModel {
     static func record(_ post: StoredPost) -> PostRecord {
         PostRecord(guid: post.guid, title: post.title, link: post.link, snippet: post.snippet, authorKey: post.authorKey,
                    authorName: post.authorName, handle: post.handle, categories: post.categories,
-                   foundUnder: post.foundUnder, published: post.published, readingMinutes: post.readingMinutes)
+                   foundUnder: post.foundUnder, published: post.published, readingMinutes: post.readingMinutes,
+                   imageURL: post.imageURL)
     }
 
     private func decidedOrBlocked() -> Set<String> {
@@ -207,6 +309,7 @@ final class ScoutModel {
             context.insert(entry)
         }
         try? context.save()
+        learn(tags: candidate.topics, text: candidate.sourceText, imageURL: post.imageURL, liked: verdict != .pass)
         deck.removeAll { $0.authorKey == candidate.authorKey }
         prefetchWhy()
         if verdict != .pass { Task { await reindexSpotlight() } }
@@ -225,6 +328,7 @@ final class ScoutModel {
             context.insert(entry)
         }
         try? context.save()
+        learn(tags: post.categories, text: "\(post.title). \(post.snippet)", imageURL: post.imageURL, liked: verdict != .pass)
         storyDeck.removeAll { $0.id == story.id }
         prefetchWhy()
     }
@@ -258,6 +362,7 @@ final class ScoutModel {
     func block(_ candidate: AuthorCandidate) {
         context.insert(BlockedAuthor(authorKey: candidate.authorKey, name: candidate.name))
         try? context.save()
+        learn(tags: candidate.topics, text: candidate.sourceText, imageURL: nil, liked: false)
         deck.removeAll { $0.authorKey == candidate.authorKey }
         prefetchWhy()
     }

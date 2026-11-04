@@ -63,13 +63,17 @@ final class AuthorInfo {
 @Model
 final class Lane {
     @Attribute(.unique) var name: String
-    /// Medium tags whose feeds supply this lane, and the topic overlap signal.
+    /// Lane keys: Medium tag slugs, or feed URLs for any other RSS or Atom feed. They supply the lane
+    /// and feed the topic overlap signal.
     var tags: [String]
+    /// The role pack this lane belongs to.
+    var packID: String = RolePack.engineering.id
     /// A sentence describing the theme, embedded for the semantic signal.
     var theme: String
     var position: Int
 
-    init(name: String, tags: [String], theme: String, position: Int) {
+    init(name: String, tags: [String], theme: String, position: Int, packID: String = RolePack.engineering.id) {
+        self.packID = packID
         self.name = name
         self.tags = tags
         self.theme = theme

@@ -30,7 +30,7 @@ enum DemoData {
             switch source {
             case .tag(let slug): report.items[source] = items.filter { $0.categories.contains(slug) }
             case .author(let handle): report.items[source] = items.filter { $0.handle == handle }
-            case .publication: report.items[source] = []
+            case .publication, .feed: report.items[source] = []
             }
         }
         return report

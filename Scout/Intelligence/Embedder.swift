@@ -24,6 +24,23 @@ enum Embedder {
         return result
     }
 
+    /// Cosine similarity of each text to an existing vector (the liked-items centroid), clamped to 0...1.
+    @concurrent
+    static func similarities(_ texts: [String: String], toVector target: [Double]) async -> [String: Double] {
+        guard let embedding = NLEmbedding.sentenceEmbedding(for: .english) else { return [:] }
+        var result: [String: Double] = [:]
+        for (key, text) in texts {
+            if Task.isCancelled { return [:] }
+            guard let vector = embedding.vector(for: text), vector.count == target.count else { continue }
+            result[key] = max(0, min(1, cosine(vector, target)))
+        }
+        return result
+    }
+
+    static func vector(_ text: String) -> [Double]? {
+        NLEmbedding.sentenceEmbedding(for: .english)?.vector(for: text)
+    }
+
     static func cosine(_ a: [Double], _ b: [Double]) -> Double {
         let denominator = (vDSP.sumOfSquares(a) * vDSP.sumOfSquares(b)).squareRoot()
         return denominator == 0 ? 0 : vDSP.dot(a, b) / denominator

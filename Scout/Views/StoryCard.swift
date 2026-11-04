@@ -10,13 +10,15 @@ struct StoryCard: View {
     let story: StoryCandidate
     let laneTags: Set<String>
     let why: String?
+    /// Visual packs lead with the post's image, large.
+    var imageFirst = false
 
     private var post: PostRecord { story.post }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                MonoLabel(story.lanesSurfacing > 1 ? "Surfaced by \(story.lanesSurfacing) lanes" : "Story")
+                MonoLabel(story.lanesSurfacing > 1 ? "Surfaced by \(story.lanesSurfacing) of your lanes" : "Story")
                 Spacer()
                 VStack(spacing: 0) {
                     Text("\(story.score)").font(.title3.monospacedDigit().weight(.semibold)).foregroundStyle(Color.scoutGreen)
@@ -25,13 +27,30 @@ struct StoryCard: View {
                 .accessibilityElement(children: .combine)
             }
 
-            Text(post.title).font(.title2.weight(.bold)).foregroundStyle(Color.ink).lineLimit(4)
+            if imageFirst, let url = post.imageURL.flatMap(URL.init(string:)) {
+                // The clear box sets the size; a fill-scaled image overlaid on it can't widen the card.
+                Color.clear
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 120, maxHeight: 240)
+                    .overlay {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Rectangle().fill(Color.paper).overlay(ProgressView())
+                        }
+                    }
+                    .clipShape(.rect(cornerRadius: 18))
+                    .layoutPriority(-1)
+                    .accessibilityLabel("Image from the post")
+            }
+            Text(post.title).font(imageFirst ? .title3.weight(.bold) : .title2.weight(.bold)).foregroundStyle(Color.ink)
+                .lineLimit(imageFirst ? 2 : 4)
             if !post.snippet.isEmpty {
-                Text(post.snippet).font(.body).foregroundStyle(Color.inkSecondary).lineLimit(3)
+                Text(post.snippet).font(.body).foregroundStyle(Color.inkSecondary).lineLimit(imageFirst ? 2 : 3)
             }
 
             FlowLayout {
-                ForEach(post.categories, id: \.self) { tag in
+                ForEach(imageFirst ? Array(post.categories.prefix(8)) : post.categories, id: \.self) { tag in
                     TagChip(text: tag)
                         .overlay(Capsule().strokeBorder(laneTags.contains(tag) ? Color.scoutGreen : .clear, lineWidth: 1.5))
                 }

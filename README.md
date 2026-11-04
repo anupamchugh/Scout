@@ -28,6 +28,43 @@ Scout grew out of MediumRSS, a 2023 tool I built to scout writers while editing 
 - **Siri**: "Scout today's new writers in Scout" shows an interactive card with the top four
   writers, plus Open deck and Shortlist all. "Show my shortlist in Scout" opens the shortlist.
 
+## Role packs
+
+A role pack is plain JSON (`.scoutpack`) that says what to read, how to rank it and what to make.
+Pick one at first launch, switch packs in Settings, or import and share them.
+
+| Pack | Reads | Output |
+| --- | --- | --- |
+| Engineering editor | Medium tags, Hacker News front page, Show HN, GitHub releases (Atom) | Markdown newsletter |
+| Tech writer / newsletter | Medium publications and authors, Substack | Markdown and HTML |
+| Illustrator / painter | Art blogs with open RSS (Colossal, Muddy Colors, Hyperallergic) | Moodboard |
+
+The illustrator pack leads with images and matches by Vision feature-print distance to images you
+kept, not by text embeddings. Instagram and Behance have no public feeds, so no pack claims them.
+
+Swipes tune the active pack, in code (`Taste.swift`):
+
+- each swipe decays every tag weight by 3%;
+- a kept card adds 0.25 to its tags' weights, a passed card subtracts 0.15;
+- weights stay within -1…1;
+- a running mean of liked text embeddings (or liked image prints) adds a similarity signal.
+
+Taste can move a score by at most 12 points for tags and 10 for similarity. Settings shows what Scout
+has learned and can reset it.
+
+## How the model is used
+
+Every request goes through one `LanguageModelSession.DynamicProfile`, `ScoutProfile`. Its body
+switches on the active pack and the mode (`scouting`, `issueWriting`, `pitchReading`):
+
+- each branch has its own instructions and tools: `recentPosts` (a writer's stored posts) for text
+  packs, `imageNotes` (the feed's caption text, never pixels) for visual packs;
+- each mode has its own temperature;
+- history is trimmed with `historyTransform`, and tool calls are logged in Settings.
+
+Code picks the branch; the model never chooses its own role. Writer statistics reach the model as a
+typed `PromptRepresentable` value (`AuthorStats`).
+
 ## Who decides what
 
 | Code decides | The on-device model writes |
@@ -101,6 +138,7 @@ Debug-only launch arguments:
 - `-demoData`: fictional writers in an in-memory store
 - `-tab today|shortlist|search`
 - `-siriCardStage`: renders the Siri card on a light platter; a rehearsal, not real Siri
+- `-pack <id>` picks a role pack; `-choosePack` shows the onboarding picker again; `-stories` opens the Stories deck
 
 ## Credits
 
