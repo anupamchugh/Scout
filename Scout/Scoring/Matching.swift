@@ -68,7 +68,56 @@ struct AuthorCandidate: Identifiable, Sendable, Hashable {
     }
 }
 
+/// One story (post) on the deck, scored against the lane in code.
+struct StoryCandidate: Identifiable, Sendable, Hashable {
+    var id: String { post.guid }
+    let post: PostRecord
+    /// How many of your lanes' tag feeds surfaced this post.
+    let lanesSurfacing: Int
+    let overlapCount: Int
+    let semantic: Double
+    let score: Int
+}
+
+struct StoryWeights: Sendable, Hashable, Codable {
+    var semantic = 0.35
+    var overlap = 0.30
+    var surfaced = 0.15
+    var recency = 0.20
+}
+
 enum Matching {
+
+    /// Lanes whose tags include a feed that listed the post: a post found through several lanes is a stronger signal.
+    static func lanesSurfacing(_ post: PostRecord, lanes: [LaneSpec]) -> Int {
+        lanes.filter { !$0.tags.isDisjoint(with: post.foundUnder) }.count
+    }
+
+    /// Stories posted in the window, highest score first (ties: more lane tags matched, newest, title).
+    static func stories(from posts: [PostRecord], lane: LaneSpec, lanes: [LaneSpec], semantic: [String: Double],
+                        excluding: Set<String>, now: Date, window: TimeInterval,
+                        weights: StoryWeights = StoryWeights()) -> [StoryCandidate] {
+        let cutoff = now.addingTimeInterval(-window)
+        let total = weights.semantic + weights.overlap + weights.surfaced + weights.recency
+        return posts.filter { $0.published >= cutoff && !excluding.contains($0.guid) && !excluding.contains($0.authorKey) }
+            .map { post in
+                let shared = post.topics.intersection(lane.tags).count
+                let surfacing = lanesSurfacing(post, lanes: lanes)
+                let similarity = min(1, max(0, semantic[post.guid] ?? 0))
+                let value = weights.semantic * similarity
+                    + weights.overlap * overlap(post.topics, lane: lane.tags)
+                    + weights.surfaced * min(1, Double(surfacing) / Double(max(1, min(3, lanes.count))))
+                    + weights.recency * recency(hours: now.timeIntervalSince(post.published) / 3600)
+                return StoryCandidate(post: post, lanesSurfacing: surfacing, overlapCount: shared, semantic: similarity,
+                                      score: total > 0 ? Int((value / total * 100).rounded()) : 0)
+            }
+            .sorted {
+                if $0.score != $1.score { return $0.score > $1.score }
+                if $0.overlapCount != $1.overlapCount { return $0.overlapCount > $1.overlapCount }
+                if $0.post.published != $1.post.published { return $0.post.published > $1.post.published }
+                return $0.post.title < $1.post.title
+            }
+    }
 
     static func overlap(_ topics: Set<String>, lane: Set<String>) -> Double {
         guard !lane.isEmpty else { return 0 }
@@ -147,6 +196,48 @@ enum Matching {
             if $0.latest != $1.latest { return $0.latest > $1.latest }
             return $0.name < $1.name
         }
+    }
+}
+
+/// Tag pairs that appear on the same post, counted across the window, as suggested lanes.
+struct TagPair: Hashable, Sendable, Comparable {
+    let first: String
+    let second: String
+
+    init(_ a: String, _ b: String) {
+        (first, second) = a < b ? (a, b) : (b, a)
+    }
+
+    var label: String { "\(first) + \(second)" }
+
+    static func < (lhs: TagPair, rhs: TagPair) -> Bool { (lhs.first, lhs.second) < (rhs.first, rhs.second) }
+}
+
+enum TagCooccurrence {
+    /// Each post counts a pair once, however its tags repeat. Ordered by count, then alphabetically.
+    static func count(_ posts: [PostRecord]) -> [(pair: TagPair, count: Int)] {
+        var counts: [TagPair: Int] = [:]
+        for post in posts {
+            let tags = Array(Set(post.categories)).sorted()
+            for i in tags.indices {
+                for j in tags.indices where j > i { counts[TagPair(tags[i], tags[j]), default: 0] += 1 }
+            }
+        }
+        return counts.map { ($0.key, $0.value) }.sorted { $0.count != $1.count ? $0.count > $1.count : $0.pair < $1.pair }
+    }
+
+    /// How many posts carry each tag, most common first.
+    static func tagCounts(_ posts: [PostRecord]) -> [(tag: String, count: Int)] {
+        Dictionary(posts.flatMap { Set($0.categories) }.map { ($0, 1) }, uniquingKeysWith: +)
+            .map { ($0.key, $0.value) }
+            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.tag < $1.tag }
+    }
+
+    /// The strongest pairs seen on at least `minimum` posts that aren't already exactly a lane's tags.
+    static func suggestions(_ posts: [PostRecord], existing: [Set<String>], minimum: Int = 3, limit: Int = 5) -> [(pair: TagPair, count: Int)] {
+        Array(count(posts).filter { entry in
+            entry.count >= minimum && !existing.contains { $0.isSuperset(of: [entry.pair.first, entry.pair.second]) }
+        }.prefix(limit))
     }
 }
 

@@ -28,12 +28,19 @@ struct SearchView: View {
     @State private var twoPlusPosts = false
     @State private var tag: String?
     @State private var includeBlocked = false
+    @State private var minMatchingTags = 0
+    @State private var minLanes = 0
+    @State private var writer: String?
+    @State private var tagOptions: [String] = []
+    @State private var writerOptions: [(key: String, name: String)] = []
     @State private var results: [SearchResult] = []
     @State private var spotlightHits: [String] = []
     @State private var importing = false
     @State private var pitchStatus: String?
 
-    private var filterKey: String { "\(query)|\(lastSevenDays)|\(twoPlusPosts)|\(tag ?? "")|\(includeBlocked)|\(model.activeLaneName)" }
+    private var filterKey: String {
+        "\(query)|\(lastSevenDays)|\(twoPlusPosts)|\(tag ?? "")|\(includeBlocked)|\(minMatchingTags)|\(minLanes)|\(writer ?? "")|\(model.activeLaneName)"
+    }
 
     var body: some View {
         NavigationStack {
@@ -99,9 +106,31 @@ struct SearchView: View {
                 FilterCapsule(title: "2+ posts", isOn: $twoPlusPosts)
                 Menu {
                     Button("Any tag") { tag = nil }
-                    ForEach(model.activeLane.tags.sorted(), id: \.self) { slug in Button(slug) { tag = slug } }
+                    ForEach(tagOptions, id: \.self) { slug in Button(slug) { tag = slug } }
                 } label: {
                     FilterCapsuleLabel(title: tag ?? "Tags", isOn: tag != nil)
+                }
+                Menu {
+                    Picker("Matching lane tags", selection: $minMatchingTags) {
+                        Text("Any").tag(0)
+                        ForEach(1...3, id: \.self) { Text("\($0)+ lane tags").tag($0) }
+                    }
+                } label: {
+                    FilterCapsuleLabel(title: minMatchingTags == 0 ? "Lane tags" : "\(minMatchingTags)+ lane tags", isOn: minMatchingTags > 0)
+                }
+                Menu {
+                    Picker("Surfaced by", selection: $minLanes) {
+                        Text("Any").tag(0)
+                        ForEach(1...3, id: \.self) { Text("\($0)+ lanes").tag($0) }
+                    }
+                } label: {
+                    FilterCapsuleLabel(title: minLanes == 0 ? "Lanes" : "Surfaced by \(minLanes)+", isOn: minLanes > 0)
+                }
+                Menu {
+                    Button("Any writer") { writer = nil }
+                    ForEach(writerOptions, id: \.key) { option in Button(option.name) { writer = option.key } }
+                } label: {
+                    FilterCapsuleLabel(title: writerOptions.first { $0.key == writer }?.name ?? "Writer", isOn: writer != nil)
                 }
                 FilterCapsule(title: includeBlocked ? "Including blocked" : "Not blocked", isOn: .init(
                     get: { !includeBlocked }, set: { includeBlocked = !$0 }))
@@ -141,12 +170,22 @@ struct SearchView: View {
         var descriptor = FetchDescriptor<StoredPost>(predicate: #Predicate { $0.published >= cutoff },
                                                      sortBy: [SortDescriptor(\.published, order: .reverse)])
         if let tag {
-            descriptor.predicate = #Predicate { $0.published >= cutoff && $0.foundUnder.contains(tag) }
+            descriptor.predicate = #Predicate { $0.published >= cutoff && ($0.categories.contains(tag) || $0.foundUnder.contains(tag)) }
         }
-        let posts = Matching.unifyAuthors(((try? context.fetch(descriptor)) ?? []).map(ScoutModel.record))
+        let allPosts = Matching.unifyAuthors(((try? context.fetch(descriptor)) ?? []).map(ScoutModel.record))
         let blockedKeys = includeBlocked ? Set<String>() : Set(blocked.map(\.authorKey))
         let lane = model.activeLane
-        let byAuthor = Dictionary(grouping: posts.filter { !blockedKeys.contains($0.authorKey) }, by: \.authorKey)
+        let lanes = model.laneSpecs
+        if tag == nil { tagOptions = TagCooccurrence.tagCounts(allPosts).prefix(40).map(\.tag) }
+        writerOptions = Matching.candidates(from: allPosts, lane: lane, semantic: [:], excluding: blockedKeys, now: now,
+                                            window: now.timeIntervalSince(cutoff)).prefix(30).map { ($0.authorKey, $0.name) }
+        let posts = allPosts.filter { post in
+            !blockedKeys.contains(post.authorKey)
+                && post.topics.intersection(lane.tags).count >= minMatchingTags
+                && Matching.lanesSurfacing(post, lanes: lanes) >= minLanes
+                && (writer.map { post.authorKey == $0 } ?? true)
+        }
+        let byAuthor = Dictionary(grouping: posts, by: \.authorKey)
             .filter { !twoPlusPosts || $0.value.count >= 2 }
         let texts = byAuthor.mapValues { $0.map { "\($0.title). \($0.snippet)" }.joined(separator: " ") }
 

@@ -119,6 +119,42 @@ final class Decision {
     }
 }
 
+/// A swipe on a story card. An issue entry is always a story; outreach still targets the writer.
+@Model
+final class StoryPick {
+    @Attribute(.unique) var guid: String
+    var title: String
+    var link: String
+    var authorKey: String
+    var authorName: String
+    var handle: String?
+    var tags: [String]
+    var lane: String
+    var verdictRaw: String
+    var score: Int
+    var decided: Date
+
+    var verdict: Verdict {
+        get { Verdict(rawValue: verdictRaw) ?? .pass }
+        set { verdictRaw = newValue.rawValue }
+    }
+
+    init(guid: String, title: String, link: String, authorKey: String, authorName: String, handle: String?,
+         tags: [String], lane: String, verdict: Verdict, score: Int, decided: Date = .now) {
+        self.guid = guid
+        self.title = title
+        self.link = link
+        self.authorKey = authorKey
+        self.authorName = authorName
+        self.handle = handle
+        self.tags = tags
+        self.lane = lane
+        self.verdictRaw = verdict.rawValue
+        self.score = score
+        self.decided = decided
+    }
+}
+
 @Model
 final class BlockedAuthor {
     @Attribute(.unique) var authorKey: String

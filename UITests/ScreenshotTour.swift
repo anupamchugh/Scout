@@ -31,6 +31,12 @@ final class ScreenshotTour: XCTestCase {
         sleep(8) // let avatars and the on-device "why" line arrive
         shoot("01-today-deck")
 
+        app.segmentedControls["today.mode"].buttons["Stories"].tap()
+        sleep(6)
+        shoot("01b-today-stories")
+        app.segmentedControls["today.mode"].buttons["Writers"].tap()
+        sleep(1)
+
         card.swipeRight()
         sleep(2)
         app.buttons["deck.shortlist"].tap()

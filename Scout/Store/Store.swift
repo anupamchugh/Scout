@@ -7,7 +7,7 @@ import Foundation
 import SwiftData
 
 enum ScoutStore {
-    static let schema = Schema([StoredPost.self, AuthorInfo.self, Lane.self, Decision.self, BlockedAuthor.self,
+    static let schema = Schema([StoredPost.self, AuthorInfo.self, Lane.self, Decision.self, StoryPick.self, BlockedAuthor.self,
                                 IssueDraft.self, IssueEntry.self, Pitch.self])
 
     /// One store for the app and its App Intents.
@@ -48,21 +48,25 @@ enum ScoutStore {
 }
 
 enum Ingest {
-    /// Inserts new feed items and merges repeats. Posts by blocked writers are never stored.
+    /// Inserts new feed items and merges repeats. A post is the same post when its RSS guid or its canonical
+    /// link matches (the same story appears in several tag feeds); merging keeps every feed that surfaced it.
+    /// Posts by blocked writers are never stored.
     @discardableResult
     static func upsert(_ report: FeedClient.Report, into context: ModelContext, now: Date = .now) throws -> Int {
         let blocked = Set(try context.fetch(FetchDescriptor<BlockedAuthor>()).map(\.authorKey))
         let guids = Array(Set(report.items.values.flatMap { $0.map(\.guid) }))
-        let existing = try context.fetch(FetchDescriptor<StoredPost>(predicate: #Predicate { guids.contains($0.guid) }))
+        let links = Array(Set(report.items.values.flatMap { $0.map { $0.canonicalLink.absoluteString } }))
+        let existing = try context.fetch(FetchDescriptor<StoredPost>(predicate: #Predicate { guids.contains($0.guid) || links.contains($0.link) }))
         var byGuid = Dictionary(existing.map { ($0.guid, $0) }, uniquingKeysWith: { first, _ in first })
+        var byLink = Dictionary(existing.map { ($0.link, $0) }, uniquingKeysWith: { first, _ in first })
         var inserted = 0
 
         for (source, items) in report.items {
             for item in items where !blocked.contains(item.authorKey) {
-                if let post = byGuid[item.guid] {
+                if let post = byGuid[item.guid] ?? byLink[item.canonicalLink.absoluteString] {
                     post.title = item.title
                     if !item.snippet.isEmpty { post.snippet = item.snippet }
-                    post.categories = item.categories
+                    post.categories = Array(Set(post.categories).union(item.categories)).sorted()
                     post.readingMinutes = post.readingMinutes ?? item.readingMinutes
                     if let tag = source.tag, !post.foundUnder.contains(tag) { post.foundUnder.append(tag) }
                 } else {
@@ -74,6 +78,7 @@ enum Ingest {
                         imageURL: item.imageURL?.absoluteString)
                     context.insert(post)
                     byGuid[item.guid] = post
+                    byLink[post.link] = post
                     inserted += 1
                 }
             }

@@ -87,12 +87,26 @@ enum Writer {
     }
 
     /// The card's "why this writer" line, kept only if its evidence is quoted and the line is clean.
-    static func why(for candidate: AuthorCandidate, lane: LaneSpec) async throws -> String? {
+    /// `stats` reaches the model as a typed `PromptRepresentable` value, not pasted text.
+    static func why(for candidate: AuthorCandidate, lane: LaneSpec, stats: AuthorStats?) async throws -> String? {
         let source = candidate.sourceText
+        let draft = try await session().respond(generating: WhyDraft.self) {
+            "Lane: \(lane.name), about \(lane.theme)."
+            if let stats { stats }
+            "<feed>\(source)</feed>"
+            "Why might this writer suit the lane?"
+        }.content
+        guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line) else { return nil }
+        return draft.line.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// The story card's "why" line, under the same checks.
+    static func why(title: String, snippet: String, lane: LaneSpec) async throws -> String? {
+        let source = "\(title). \(snippet)"
         let prompt = """
             Lane: \(lane.name), about \(lane.theme).
             <feed>\(source)</feed>
-            Why might this writer suit the lane?
+            Why might this story suit the lane?
             """
         let draft = try await session().respond(to: prompt, generating: WhyDraft.self).content
         guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line) else { return nil }

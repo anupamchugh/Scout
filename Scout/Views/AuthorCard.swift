@@ -10,6 +10,8 @@ struct AuthorCard: View {
     let candidate: AuthorCandidate
     /// Shown only when the on-device model wrote a line that passed `TextGuard`; otherwise the box is left out.
     let why: String?
+    /// From the writer's own feed, computed in code.
+    var stats: AuthorStats?
 
     private var post: PostRecord { candidate.bestPost }
 
@@ -42,6 +44,24 @@ struct AuthorCard: View {
                 MonoLabel("Best this week")
                 Text(post.title).font(.headline).foregroundStyle(Color.ink).lineLimit(3)
                 Text(meta).font(.caption).foregroundStyle(Color.inkSecondary)
+            }
+
+            if let stats {
+                Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {
+                    GridRow {
+                        MonoLabel("Posts / week")
+                        MonoLabel("Typical length")
+                        MonoLabel("Title shape")
+                    }
+                    GridRow {
+                        Text(stats.postsPerWeek, format: .number.precision(.fractionLength(1)))
+                        Text(stats.typicalWords.map { "\($0.formatted()) words" } ?? "—")
+                        Text(stats.leadingPatterns.first?.rawValue ?? "—").lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(Color.ink)
+                }
+                .accessibilityIdentifier("deck.stats")
             }
 
             FlowLayout {

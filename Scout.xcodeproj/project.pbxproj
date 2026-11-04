@@ -9,14 +9,17 @@
 /* Begin PBXBuildFile section */
 		014983322707A9BD360B6531 /* FeedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C420E836BC697A2D2F868602 /* FeedItem.swift */; };
 		04AF47E221C44EA5EB1E2D43 /* Embedder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28A104E91B472B58D005C9F9 /* Embedder.swift */; };
+		0D41C9F0981182242DD1E08F /* AuthorStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCEA4448018D8F1DACACAE8 /* AuthorStats.swift */; };
 		1408621B7B96AB12162E1C0B /* IssueRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33FC9097E7A5FDC57913F31 /* IssueRenderer.swift */; };
 		14769CFD17472DA567AFA3FE /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5773F3DB5DC5D621BBAA0F30 /* DemoData.swift */; };
 		1677402F75A3BF20B004D732 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2387BC66EF18AA4C9E5DDA /* TodayView.swift */; };
+		16C37E2CD3E2091718CB07C4 /* StoryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62AE8CFEE7D6018414293AD6 /* StoryCard.swift */; };
 		1BFC519A51F6D1959A1EEAF6 /* PitchReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957E0A8D0F935C259948A140 /* PitchReader.swift */; };
 		1CB8005401FA536B0CD027BB /* SwipeDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD91E5A82B9B1D5DBA7AD9CF /* SwipeDeck.swift */; };
 		3E84C5D6A8C928508EBD8AFB /* FeedCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C73C57E0FE5F72B0C29F43F /* FeedCache.swift */; };
 		4A795EA872EFE19999CD869D /* SpotlightIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 363B6271F677B2FD69162CC0 /* SpotlightIndex.swift */; };
 		4CCB6997B31A4BABF2DE7258 /* IssueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504B9A63924006A2AD1A5553 /* IssueTests.swift */; };
+		56AABEB3CB9869B156717465 /* StoriesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68A9BFBEB3E60E237A06AA69 /* StoriesTests.swift */; };
 		56D89F37E9C5F301C5B7D0D4 /* RSSParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC8C3443682567DEB181474 /* RSSParserTests.swift */; };
 		631212556C903F7E5E26A4C4 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1632CE38968C64DB6C1E02B /* Store.swift */; };
 		74F14F4A3A830CB4AE919E50 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E099988DC91DED97B18CA4 /* SearchView.swift */; };
@@ -29,6 +32,7 @@
 		945D660F191EEF660DD9F437 /* DeckUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2108523A4CF401DED4B01C39 /* DeckUITests.swift */; };
 		9DF96C5B3192709E5AAA7E02 /* ScoutSiriCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27A51BDA15608FEECCABBB4 /* ScoutSiriCard.swift */; };
 		A0DD01BE2726D67AE8D8949A /* SiriCardStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749A7E2AD3EDEFECCED67C5 /* SiriCardStage.swift */; };
+		BE513AA08F7456036C31206A /* salari-dev-2026-11-05.xml in Resources */ = {isa = PBXBuildFile; fileRef = BF0E6C5F10004FDAEFFEF82A /* salari-dev-2026-11-05.xml */; };
 		C2EB27B5CEDF32DDF92C1939 /* IssueEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */; };
 		C39ADC58C9E80625AEE102ED /* Matching.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B7193B98DEC79B141882FC /* Matching.swift */; };
 		CD0DA25E49C2B62E6D7295E3 /* AuthorCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9ED0147405718AC9DCE621B /* AuthorCard.swift */; };
@@ -59,6 +63,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0DCEA4448018D8F1DACACAE8 /* AuthorStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorStats.swift; sourceTree = "<group>"; };
 		17807A002C04E20022167DC2 /* ScoutTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ScoutTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		193D55DF2403859721C1DEEA /* MatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchingTests.swift; sourceTree = "<group>"; };
 		1C73C57E0FE5F72B0C29F43F /* FeedCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCache.swift; sourceTree = "<group>"; };
@@ -73,7 +78,9 @@
 		504B9A63924006A2AD1A5553 /* IssueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueTests.swift; sourceTree = "<group>"; };
 		5773F3DB5DC5D621BBAA0F30 /* DemoData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoData.swift; sourceTree = "<group>"; };
 		59E099988DC91DED97B18CA4 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		62AE8CFEE7D6018414293AD6 /* StoryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryCard.swift; sourceTree = "<group>"; };
 		650C93BA811B35D59376E499 /* RSSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSParser.swift; sourceTree = "<group>"; };
+		68A9BFBEB3E60E237A06AA69 /* StoriesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoriesTests.swift; sourceTree = "<group>"; };
 		71263DFB15DCD5CB576BACE4 /* Writer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Writer.swift; sourceTree = "<group>"; };
 		809392D824B6E64401F3CCBF /* FeedClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedClient.swift; sourceTree = "<group>"; };
 		914746B09EB0DB861235C499 /* LinkPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreview.swift; sourceTree = "<group>"; };
@@ -83,6 +90,7 @@
 		A9ED0147405718AC9DCE621B /* AuthorCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorCard.swift; sourceTree = "<group>"; };
 		B30D3A0A6715141C40A5B63E /* ScoutUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ScoutUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BCE83005E807D1270C1D70A3 /* ScoutModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutModel.swift; sourceTree = "<group>"; };
+		BF0E6C5F10004FDAEFFEF82A /* salari-dev-2026-11-05.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "salari-dev-2026-11-05.xml"; sourceTree = "<group>"; };
 		C420E836BC697A2D2F868602 /* FeedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItem.swift; sourceTree = "<group>"; };
 		D27A51BDA15608FEECCABBB4 /* ScoutSiriCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutSiriCard.swift; sourceTree = "<group>"; };
 		DFCAC66FDB8F6F331BEA5BED /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -145,6 +153,7 @@
 		6B8A92F868A13D3179D659D5 /* Scoring */ = {
 			isa = PBXGroup;
 			children = (
+				0DCEA4448018D8F1DACACAE8 /* AuthorStats.swift */,
 				F8B7193B98DEC79B141882FC /* Matching.swift */,
 			);
 			path = Scoring;
@@ -177,6 +186,7 @@
 				35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */,
 				59E099988DC91DED97B18CA4 /* SearchView.swift */,
 				4BA8DD89169184EB15751A65 /* ShortlistView.swift */,
+				62AE8CFEE7D6018414293AD6 /* StoryCard.swift */,
 				FD91E5A82B9B1D5DBA7AD9CF /* SwipeDeck.swift */,
 				FD2387BC66EF18AA4C9E5DDA /* TodayView.swift */,
 			);
@@ -208,6 +218,14 @@
 				BCE83005E807D1270C1D70A3 /* ScoutModel.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		AFDF50867B9AFE00F0A54348 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				BF0E6C5F10004FDAEFFEF82A /* salari-dev-2026-11-05.xml */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		D29E3265B4C642C428108BED /* Feed */ = {
@@ -253,6 +271,8 @@
 				504B9A63924006A2AD1A5553 /* IssueTests.swift */,
 				193D55DF2403859721C1DEEA /* MatchingTests.swift */,
 				1DC8C3443682567DEB181474 /* RSSParserTests.swift */,
+				68A9BFBEB3E60E237A06AA69 /* StoriesTests.swift */,
+				AFDF50867B9AFE00F0A54348 /* Fixtures */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -310,6 +330,7 @@
 			buildConfigurationList = 771E8F5217CCA3CDB8155A2E /* Build configuration list for PBXNativeTarget "ScoutTests" */;
 			buildPhases = (
 				97E4ECC72541AC83B0BFE943 /* Sources */,
+				FFAFD3DC4FFA05B5E35DEFFD /* Resources */,
 			);
 			buildRules = (
 			);
@@ -377,6 +398,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FFAFD3DC4FFA05B5E35DEFFD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE513AA08F7456036C31206A /* salari-dev-2026-11-05.xml in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -385,6 +414,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CD0DA25E49C2B62E6D7295E3 /* AuthorCard.swift in Sources */,
+				0D41C9F0981182242DD1E08F /* AuthorStats.swift in Sources */,
 				14769CFD17472DA567AFA3FE /* DemoData.swift in Sources */,
 				04AF47E221C44EA5EB1E2D43 /* Embedder.swift in Sources */,
 				3E84C5D6A8C928508EBD8AFB /* FeedCache.swift in Sources */,
@@ -406,6 +436,7 @@
 				A0DD01BE2726D67AE8D8949A /* SiriCardStage.swift in Sources */,
 				4A795EA872EFE19999CD869D /* SpotlightIndex.swift in Sources */,
 				631212556C903F7E5E26A4C4 /* Store.swift in Sources */,
+				16C37E2CD3E2091718CB07C4 /* StoryCard.swift in Sources */,
 				1CB8005401FA536B0CD027BB /* SwipeDeck.swift in Sources */,
 				8E1C940F854026F0FD05DB75 /* Theme.swift in Sources */,
 				1677402F75A3BF20B004D732 /* TodayView.swift in Sources */,
@@ -420,6 +451,7 @@
 				4CCB6997B31A4BABF2DE7258 /* IssueTests.swift in Sources */,
 				CFAAACE641AA0CDCBA8C9B75 /* MatchingTests.swift in Sources */,
 				56D89F37E9C5F301C5B7D0D4 /* RSSParserTests.swift in Sources */,
+				56AABEB3CB9869B156717465 /* StoriesTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

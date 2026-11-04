@@ -44,7 +44,11 @@ targets:
     type: bundle.unit-test
     platform: iOS
     supportedDestinations: [iOS]
-    sources: [Tests]
+    sources:
+      - path: Tests
+        excludes: ["Fixtures/**"]
+      - path: Tests/Fixtures
+        buildPhase: resources
     dependencies:
       - target: Scout
     settings:

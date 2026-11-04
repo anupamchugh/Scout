@@ -10,6 +10,8 @@ struct ShortlistView: View {
     @Environment(ScoutModel.self) private var model
     @Query(sort: \Decision.decided, order: .reverse) private var decisions: [Decision]
     @Query(sort: \IssueDraft.created, order: .reverse) private var issues: [IssueDraft]
+    @Query(filter: #Predicate<StoryPick> { $0.verdictRaw == "shortlist" }, sort: \StoryPick.decided, order: .reverse)
+    private var stories: [StoryPick]
 
     @State private var showsIssue = false
 
@@ -18,6 +20,8 @@ struct ShortlistView: View {
     private var rows: [ShortlistRow] {
         shortlisted.map { ShortlistRow(name: $0.authorName, handle: $0.handle, lane: $0.lane,
                                        postTitle: $0.bestPostTitle, postURL: $0.bestPostLink, note: $0.note) }
+            + stories.map { ShortlistRow(name: $0.authorName, handle: $0.handle, lane: "\($0.lane) · stories",
+                                         postTitle: $0.title, postURL: $0.link, note: "") }
     }
 
     var body: some View {
@@ -25,6 +29,11 @@ struct ShortlistView: View {
             List {
                 ForEach(Dictionary(grouping: shortlisted, by: \.lane).sorted(by: { $0.key < $1.key }), id: \.key) { lane, group in
                     Section { ForEach(group) { ShortlistRowView(decision: $0) } } header: { MonoLabel(lane) }
+                }
+                if !stories.isEmpty {
+                    Section {
+                        ForEach(stories) { StoryPickRow(pick: $0) }
+                    } header: { MonoLabel("Stories") }
                 }
                 if let issue = issues.first {
                     Section {
@@ -46,7 +55,7 @@ struct ShortlistView: View {
             .scrollContentBackground(.hidden)
             .background(Color.paper)
             .overlay {
-                if shortlisted.isEmpty && (issues.first?.entries.isEmpty ?? true) {
+                if shortlisted.isEmpty && stories.isEmpty && (issues.first?.entries.isEmpty ?? true) {
                     ContentUnavailableView("Nobody shortlisted yet", systemImage: "checkmark.circle",
                                            description: Text("Swipe right on a writer in Today."))
                 }
@@ -135,6 +144,42 @@ struct ShortlistRowView: View {
         if let note = await model.draftNote(for: decision) {
             decision.note = note
             copied = false
+        }
+    }
+}
+
+struct StoryPickRow: View {
+    let pick: StoryPick
+    @Environment(ScoutModel.self) private var model
+    @Environment(\.openURL) private var openURL
+    @Query private var writerDecisions: [Decision]
+
+    init(pick: StoryPick) {
+        self.pick = pick
+        let key = pick.authorKey
+        _writerDecisions = Query(filter: #Predicate<Decision> { $0.authorKey == key })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(pick.title).font(.headline).foregroundStyle(Color.ink).lineLimit(3)
+            Text(pick.handle.map { "\(pick.authorName) · @\($0)" } ?? pick.authorName)
+                .font(.subheadline).foregroundStyle(Color.inkSecondary)
+            FlowLayout { ForEach(pick.tags, id: \.self) { TagChip(text: $0) } }
+            HStack(spacing: 10) {
+                Button("Open post", systemImage: "safari") { if let url = URL(string: pick.link) { openURL(url) } }
+                Button(writerDecisions.isEmpty ? "Shortlist writer" : "Writer shortlisted",
+                       systemImage: writerDecisions.isEmpty ? "person.badge.plus" : "checkmark") { model.shortlistWriter(of: pick) }
+                    .disabled(!writerDecisions.isEmpty)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .font(.caption)
+            .lineLimit(1)
+        }
+        .padding(.vertical, 6)
+        .swipeActions {
+            Button("Remove", systemImage: "arrow.uturn.backward", role: .destructive) { model.undoStory(pick) }
         }
     }
 }
