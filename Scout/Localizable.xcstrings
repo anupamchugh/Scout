@@ -98,6 +98,16 @@
         }
       }
     },
+    "%lld posts now": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अभी %lld पोस्ट"
+          }
+        }
+      }
+    },
     "%lld shortlisted": {
       "localizations": {
         "hi": {
@@ -247,6 +257,26 @@
         }
       }
     },
+    "Add a site": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साइट जोड़ें"
+          }
+        }
+      }
+    },
+    "Add a site…": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साइट जोड़ें…"
+          }
+        }
+      }
+    },
     "Add a writer Scout has stored to your shortlist.": {
       "localizations": {
         "hi": {
@@ -263,6 +293,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "अंक में जोड़ें"
+          }
+        }
+      }
+    },
+    "Already in your catalog, close in meaning": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "आपके कैटलॉग में पहले से है, मतलब में क़रीब"
           }
         }
       }
@@ -327,12 +367,42 @@
         }
       }
     },
+    "Apple Intelligence isn't available, so Scout checked the words of your topic only.": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence उपलब्ध नहीं है, इसलिए Scout ने सिर्फ़ आपके विषय के शब्द जाँचे।"
+          }
+        }
+      }
+    },
     "Apple Intelligence isn't available, so the agents can't draft. Your picks and notes are unchanged.": {
       "localizations": {
         "hi": {
           "stringUnit": {
             "state": "translated",
             "value": "Apple Intelligence उपलब्ध नहीं है, इसलिए एजेंट ड्राफ़्ट नहीं बना सकते। आपकी चुनी चीज़ें और नोट वैसे ही हैं।"
+          }
+        }
+      }
+    },
+    "Apple Intelligence suggests tag names on this device. Scout reads each tag's Medium feed and keeps only tags that have posts.": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence इसी डिवाइस पर टैग के नाम सुझाता है। Scout हर टैग की Medium फ़ीड पढ़ता है और सिर्फ़ वही टैग रखता है जिन पर पोस्ट हैं।"
+          }
+        }
+      }
+    },
+    "Apple tech, blogging, engineering management…": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple tech, blogging, engineering management…"
           }
         }
       }
@@ -426,6 +496,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "रद्द करें"
+          }
+        }
+      }
+    },
+    "Checking Medium…": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium जाँचा जा रहा है…"
           }
         }
       }
@@ -680,6 +760,26 @@
         }
       }
     },
+    "Find feeds": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ीड ढूँढें"
+          }
+        }
+      }
+    },
+    "Find tags": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "टैग ढूँढें"
+          }
+        }
+      }
+    },
     "Find today's best-matching writers for a lane and show them on a card.": {
       "localizations": {
         "hi": {
@@ -706,6 +806,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "@%@ को फ़ॉलो कर रहे हैं।"
+          }
+        }
+      }
+    },
+    "From your words · %@": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "आपके शब्दों से · %@"
           }
         }
       }
@@ -829,6 +939,16 @@
         }
       }
     },
+    "Lane name": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लेन का नाम"
+          }
+        }
+      }
+    },
     "Lane: %@, %lld cards": {
       "localizations": {
         "en": {
@@ -841,6 +961,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "लेन: %1$@, %2$lld कार्ड"
+          }
+        }
+      }
+    },
+    "Looking for feeds…": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ीड ढूँढी जा रही हैं…"
           }
         }
       }
@@ -921,12 +1051,42 @@
         }
       }
     },
+    "New topic": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "नया विषय"
+          }
+        }
+      }
+    },
+    "New topic…": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "नया विषय…"
+          }
+        }
+      }
+    },
     "No new writers yet": {
       "localizations": {
         "hi": {
           "stringUnit": {
             "state": "translated",
             "value": "अभी कोई नया लेखक नहीं"
+          }
+        }
+      }
+    },
+    "No posts on Medium under this tag": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium पर इस टैग में कोई पोस्ट नहीं"
           }
         }
       }
@@ -977,6 +1137,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "अभी शॉर्टलिस्ट में कोई नहीं"
+          }
+        }
+      }
+    },
+    "None of those tags has posts on Medium. Try other words.": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इनमें से किसी टैग पर Medium में पोस्ट नहीं हैं। दूसरे शब्द आज़माएँ।"
           }
         }
       }
@@ -1150,6 +1320,9 @@
           }
         }
       }
+    },
+    "RSS ✓ · llms.txt ✓": {
+      "shouldTranslate": false
     },
     "Rank cards with this tag lower in the active role pack.": {
       "localizations": {
@@ -1341,6 +1514,16 @@
         }
       }
     },
+    "Scout reads the page's own feed links, follows redirects and tries common feed paths. Optional lanes: Hacker News, Show HN and Apple developer news are already in the Engineering pack.": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scout पेज के अपने फ़ीड लिंक पढ़ता है, रीडायरेक्ट फ़ॉलो करता है और आम फ़ीड पते आज़माता है। वैकल्पिक लेन: Hacker News, Show HN और Apple developer news पहले से Engineering पैक में हैं।"
+          }
+        }
+      }
+    },
     "Search": {
       "localizations": {
         "hi": {
@@ -1493,6 +1676,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "मेरी शॉर्टलिस्ट दिखाएँ"
+          }
+        }
+      }
+    },
+    "Suggested by Apple Intelligence · %@": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence का सुझाव · %@"
           }
         }
       }
@@ -1811,6 +2004,9 @@
       "shouldTranslate": false
     },
     "scout-model-runs.jsonl": {
+      "shouldTranslate": false
+    },
+    "swiftbysundell.com": {
       "shouldTranslate": false
     },
     "· %lld": {

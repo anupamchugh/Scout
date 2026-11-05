@@ -32,6 +32,12 @@ struct EntryNoteDraft {
 }
 
 @Generable
+struct TagGuessDraft {
+    @Guide(description: "Medium tag names for the topic, lowercase, words joined by hyphens", .maximumCount(8))
+    var tags: [String]
+}
+
+@Generable
 struct PitchDraft {
     @Guide(description: "One or two plain sentences summarising what the pitch proposes, using only the pitch text")
     var summary: String
@@ -209,6 +215,12 @@ enum Writer {
     }
 
     /// Kept only if it adds no numbers the pitch text lacks and no links.
+    /// The model's guesses at Medium tags for a topic. Only guesses: `ScoutModel.checkTags` keeps those whose feed has posts.
+    static func tagGuesses(for topic: String) async throws -> [String] {
+        try await session(.tagging).respond(to: "Topic: \(topic)", generating: TagGuessDraft.self,
+                                            options: ScoutMode.tagging.options).content.tags
+    }
+
     static func pitchSummary(_ text: String) async throws -> String? {
         let excerpt = String(text.prefix(3000))
         let summary = try await session(.pitchReading).respond(to: "Summarise this pitch.\n<feed>\(excerpt)</feed>",

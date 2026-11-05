@@ -130,6 +130,31 @@ final class ScreenshotTour: XCTestCase {
         shoot("10-search-hindi")
     }
 
+    /// Any topic in plain words becomes a lane: the model suggests tags, Scout keeps those with live Medium feeds.
+    @MainActor
+    func testNewTopic() throws {
+        try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")
+        let app = XCUIApplication()
+        app.launchArguments = ["-pack", "engineering-editor"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["deck.card"].firstMatch.waitForExistence(timeout: 90))
+        app.buttons["today.lanePicker"].tap()
+        app.buttons["New topic…"].tap()
+        let field = app.textFields["topic.field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("blogging and newsletters")
+        app.buttons["topic.find"].tap()
+        let add = app.buttons["topic.add"]
+        expectation(for: NSPredicate(format: "isEnabled == true"), evaluatedWith: add)
+        waitForExpectations(timeout: 90)
+        sleep(1)
+        shoot("15-new-topic-tags")
+        add.tap()
+        sleep(10)
+        shoot("16-topic-lane-deck")
+    }
+
     @MainActor
     func testSiriCardStage() throws {
         try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")

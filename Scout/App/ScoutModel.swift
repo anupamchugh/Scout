@@ -531,6 +531,15 @@ final class ScoutModel {
         return inserted
     }
 
+    /// Fetches each candidate's Medium tag feed and reports how many posts it has now. Posts found are stored,
+    /// so their tags join the catalog. A candidate whose feed is empty or missing is not a live tag.
+    func checkTags(_ candidates: [String]) async -> [TopicTags.Checked] {
+        let report = await fetch(candidates.map(FeedSource.tag))
+        _ = try? Ingest.upsert(report, into: context)
+        catalogVersion += 1
+        return candidates.map { TopicTags.Checked(tag: $0, posts: report.items[.tag($0)]?.count ?? 0) }
+    }
+
     /// Bumped when the tag catalog changes, so views re-read it.
     private(set) var catalogVersion = 0
 

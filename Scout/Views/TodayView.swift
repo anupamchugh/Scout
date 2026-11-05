@@ -17,6 +17,7 @@ struct TodayView: View {
     @State private var showsPackPicker = false
     @State private var showsNewLane = false
     @State private var showsAddSite = false
+    @State private var showsNewTopic = false
     @State private var asking: AskSubject?
     @State private var threadBrief: ThreadBriefItem?
     @State private var reading: ReaderItem?
@@ -79,6 +80,7 @@ struct TodayView: View {
         .sheet(isPresented: $showsPackPicker) { PackPickerView() }
         .sheet(isPresented: $showsNewLane) { NewLaneView() }
         .sheet(isPresented: $showsAddSite) { AddSiteView() }
+        .sheet(isPresented: $showsNewTopic) { NewTopicLaneView() }
         .sheet(item: $asking) { AskSheet(subject: $0) }
         .sheet(item: $threadBrief) { ThreadBriefView(storyID: $0.id) }
         .sheet(item: $reading) { ReaderView(guid: $0.id, askSubject: $0.subject) }
@@ -125,6 +127,7 @@ struct TodayView: View {
                 ForEach(lanes.filter { $0.packID == model.activePack.id }) { Text($0.name).tag($0.name) }
             }
             Button("New lane…", systemImage: "plus") { showsNewLane = true }
+            Button("New topic…", systemImage: "sparkle.magnifyingglass") { showsNewTopic = true }
             Button("Add a site…", systemImage: "globe") { showsAddSite = true }
             Picker("Window", selection: $model.window) {
                 ForEach(DeckWindow.allCases) { Text($0.rawValue).tag($0) }

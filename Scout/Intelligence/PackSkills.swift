@@ -17,7 +17,7 @@ enum PackSkills {
     static func offered(in mode: ScoutMode) -> Bool {
         switch mode {
         case .asking, .issueWriting, .blurber, .spotlight, .editor: true
-        case .scouting, .pitchReading, .curator: false
+        case .scouting, .pitchReading, .curator, .tagging: false
         }
     }
 

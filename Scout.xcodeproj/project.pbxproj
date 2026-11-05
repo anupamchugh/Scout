@@ -23,6 +23,7 @@
 		4AC4AD2ADD8B0788006ECE37 /* FoundationModelsUtilities in Frameworks */ = {isa = PBXBuildFile; productRef = 5C9DF689ADF107E047CCA367 /* FoundationModelsUtilities */; };
 		4EEE7E3E4129899DC1C8C24C /* ScoutKit in Frameworks */ = {isa = PBXBuildFile; productRef = E71C1644FB2CE2C32286D709 /* ScoutKit */; };
 		631212556C903F7E5E26A4C4 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1632CE38968C64DB6C1E02B /* Store.swift */; };
+		63608347C3D4868B3D103B2F /* NewTopicLaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CFB8A69DF298AB7A9C369E /* NewTopicLaneView.swift */; };
 		6678E7E8281BDCBBBA6CC623 /* AskSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69EDD33B5234DBCADB81FAE /* AskSheet.swift */; };
 		6E2A82EEF31A49FBBD42B975 /* ScoutProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001FE182B28AE926E7C3BA34 /* ScoutProfile.swift */; };
 		74F14F4A3A830CB4AE919E50 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E099988DC91DED97B18CA4 /* SearchView.swift */; };
@@ -82,6 +83,7 @@
 		35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueEditorView.swift; sourceTree = "<group>"; };
 		363B6271F677B2FD69162CC0 /* SpotlightIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndex.swift; sourceTree = "<group>"; };
 		40896C5C3766C4916251E5A6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		43CFB8A69DF298AB7A9C369E /* NewTopicLaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTopicLaneView.swift; sourceTree = "<group>"; };
 		4910000964058CE4E3769F34 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderView.swift; sourceTree = "<group>"; };
 		4BA8DD89169184EB15751A65 /* ShortlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortlistView.swift; sourceTree = "<group>"; };
 		50D2AE96762B1F12FBD1158B /* HackerNewsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HackerNewsViews.swift; sourceTree = "<group>"; };
@@ -215,6 +217,7 @@
 				7D20A83778EE6C524199B4E8 /* EvaluationsView.swift */,
 				50D2AE96762B1F12FBD1158B /* HackerNewsViews.swift */,
 				35C45FB0299BFCE5B6916557 /* IssueEditorView.swift */,
+				43CFB8A69DF298AB7A9C369E /* NewTopicLaneView.swift */,
 				4910000964058CE4E3769F34 /* ReaderView.swift */,
 				59E099988DC91DED97B18CA4 /* SearchView.swift */,
 				9A786F2CF4C0CE2A22F1BB73 /* SettingsView.swift */,
@@ -451,6 +454,7 @@
 				8996CF3A1C0B52D8651A1913 /* LinkPreview.swift in Sources */,
 				8F36BDFB1516628FB20FD5BA /* ModelRun.swift in Sources */,
 				E5EC4A17D745FB73F1FA7792 /* Models.swift in Sources */,
+				63608347C3D4868B3D103B2F /* NewTopicLaneView.swift in Sources */,
 				8045A1D89F322640133725C7 /* PackSkills.swift in Sources */,
 				1BFC519A51F6D1959A1EEAF6 /* PitchReader.swift in Sources */,
 				136CB7BFF1DF19FF6AE66B32 /* ReaderView.swift in Sources */,

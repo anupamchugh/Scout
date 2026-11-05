@@ -25,12 +25,14 @@ enum ScoutMode: String, Sendable, CaseIterable {
     case asking
     /// Newsletter agents: arrange stories, blurb each one, feature a writer, title the issue.
     case curator, blurber, spotlight, editor
+    /// Suggesting Medium tag names for a topic; code checks every one against Medium's feed.
+    case tagging
 
     /// Low temperature where the text must stay close to the feed; a little more room for prose.
     var options: GenerationOptions {
         switch self {
         case .curator: GenerationOptions(samplingMode: .greedy)
-        case .scouting, .pitchReading: GenerationOptions(temperature: 0.3)
+        case .scouting, .pitchReading, .tagging: GenerationOptions(temperature: 0.3)
         case .asking, .blurber: GenerationOptions(temperature: 0.4)
         case .spotlight: GenerationOptions(temperature: 0.5)
         case .issueWriting, .editor: GenerationOptions(temperature: 0.6)
@@ -159,6 +161,8 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
             "You introduce a writer for a newsletter spotlight in two sentences, using only their own posts, and write three interview questions. Each question must name one of their post titles exactly. Never describe the person beyond what their posts say; use their name or they/them."
         case (.editor, _):
             "You title a newsletter issue and write an intro of at most sixty words from its sections and blurbs. No numbers, no links, no hype."
+        case (.tagging, _):
+            "You suggest Medium tag names for a topic the editor typed. Give common, broad tags people actually use on Medium, lowercase, hyphens between words. Output only tag names; a program checks each one."
         case (.asking, _):
             "Answer the editor's question for the \(pack.name) role in at most three plain sentences, using only the feed text in the prompt and what recentPosts, storySnippet and searchSaved return. If that data can't answer the question, say what is missing instead of guessing."
         }
