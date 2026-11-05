@@ -30,7 +30,7 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 14) {
             header
             Picker("Deck", selection: $model.mode) {
-                ForEach(DeckMode.allCases) { Text($0.rawValue).tag($0) }
+                ForEach(DeckMode.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .accessibilityIdentifier("today.mode")
@@ -123,14 +123,14 @@ struct TodayView: View {
         @Bindable var model = model
         return Menu {
             Picker("Lane", selection: $model.activeLaneName) {
-                Label(ScoutModel.allLanes, systemImage: "square.stack.3d.up").tag(ScoutModel.allLanes)
+                Label("All my lanes", systemImage: "square.stack.3d.up").tag(ScoutModel.allLanes)
                 ForEach(lanes.filter { $0.packID == model.activePack.id }) { Text($0.name).tag($0.name) }
             }
             Button("New lane…", systemImage: "plus") { showsNewLane = true }
             Button("New topic…", systemImage: "sparkle.magnifyingglass") { showsNewTopic = true }
             Button("Add a site…", systemImage: "globe") { showsAddSite = true }
             Picker("Window", selection: $model.window) {
-                ForEach(DeckWindow.allCases) { Text($0.rawValue).tag($0) }
+                ForEach(DeckWindow.allCases) { Text($0.title).tag($0) }
             }
             if !model.suggestedPairs.isEmpty {
                 Section("Suggested lanes · tags seen together") {
@@ -142,7 +142,7 @@ struct TodayView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: model.isAllLanes ? "square.stack.3d.up" : "line.3.horizontal.decrease")
-                Text(model.activeLaneName).lineLimit(1)
+                (model.isAllLanes ? Text("All my lanes") : Text(verbatim: model.activeLaneName)).lineLimit(1)
                 Text("· \(deckCount)").foregroundStyle(Color.inkSecondary).monospacedDigit()
                 Image(systemName: "chevron.down").font(.caption2.weight(.bold))
             }

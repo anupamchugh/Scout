@@ -79,7 +79,7 @@ struct NewTopicLaneView: View {
 
     private func detail(for entry: TopicTags.Checked) -> Text {
         guard entry.isLive else { return Text("No posts on Medium under this tag") }
-        let posts = Text("\(entry.posts) posts now")
+        let posts = Text("^[\(entry.posts) post](inflect: true) now")
         return suggested.contains(entry.tag) ? Text("Suggested by Apple Intelligence · \(posts)") : Text("From your words · \(posts)")
     }
 

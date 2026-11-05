@@ -323,6 +323,14 @@ public enum TextGuard {
                    options: [.regularExpression, .caseInsensitive]) != nil
     }
 
+    /// Praise that says nothing about the work ("shows deep understanding", "an expert"). A card line names what the post does.
+    public static func isPraise(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        let vague = ["deep understanding", "expertise", "expert", "passionate", "talented", "skilled", "knowledgeable",
+                     "thought leader", "world-class", "must-read"]
+        return (OutreachCheck.flattery + vague).contains { lower.contains($0) }
+    }
+
     public static func isClean(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmed.isEmpty && !hasDigits(trimmed) && !hasLink(trimmed)

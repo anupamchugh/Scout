@@ -28,7 +28,8 @@ final class DeckUITests: XCTestCase {
         waitForExpectations(timeout: 5)
 
         app.tabBars.buttons["Shortlist"].tap()
-        XCTAssertTrue(app.staticTexts["Sample Writer A"].waitForExistence(timeout: 5)
-                      || app.staticTexts["Sample Writer B"].waitForExistence(timeout: 1))
+        let names = ["Mara Quill", "Theo Lantern", "Iris Fernhall", "Juno Ashby", "Ola Brightwater", "Felix Marrow", "Wren Calloway"]
+        let shortlisted = app.staticTexts.matching(NSPredicate(format: "label IN %@", names)).firstMatch
+        XCTAssertTrue(shortlisted.waitForExistence(timeout: 5))
     }
 }

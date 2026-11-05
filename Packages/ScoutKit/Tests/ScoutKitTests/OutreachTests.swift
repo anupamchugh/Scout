@@ -34,6 +34,23 @@ struct OutreachTests {
         #expect(OutreachCheck.problems(good, title: title, snippet: snippet) == [])
     }
 
+    /// The note the owner saw quoted a byline: "the point about “by Ron McFarland, Ph”".
+    @Test func templateSkipsTitleAndByline() {
+        let title = "Inference in Production: Keeping Fast Models Fast, Reliable, and Affordable"
+        let snippet = "Inference in Production: Keeping Fast Models Fast, Reliable, and Affordable by Ron McFarland, Ph.D. "
+            + "Serving a model is a cost problem before it is a speed problem. Batching requests cuts the bill."
+        let note = OutreachCheck.template(title: title, snippet: snippet, lane: "AI and LLMs")
+        #expect(!note.contains("McFarland"))
+        #expect(note.contains("serving a model is a cost problem"))
+        let bylineOnly = OutreachCheck.template(title: "Hello", snippet: "Hello by Jane Doe", lane: "X")
+        #expect(bylineOnly == "I read “Hello”. Would you write a piece along those lines for X?")
+    }
+
+    @Test func praiseLinesAreCaught() {
+        #expect(TextGuard.isPraise("This writer shows deep understanding of actors."))
+        #expect(!TextGuard.isPraise("Shows how each actor owns its state and every hop is an await."))
+    }
+
     @Test func templateMeetsTheRules() {
         let note = OutreachCheck.template(title: title, snippet: snippet, lane: "Swift concurrency")
         #expect(OutreachCheck.isGood(note, title: title, snippet: snippet), "\(OutreachCheck.problems(note, title: title, snippet: snippet))")

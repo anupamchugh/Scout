@@ -13,6 +13,25 @@ the issue intro. It never decides who ranks where.
 
 Scout grew out of MediumRSS, a 2023 tool I built to scout writers while editing Better Programming.
 
+<p align="center"><img src="docs/media/scout-demo.gif" width="300" alt="Scout demo: Today deck, swipe, Shortlist with outreach notes, Issue drafted by agents, Search with tags, New topic"></p>
+
+[Watch the 60-second demo (MP4)](docs/media/scout-demo.mp4). The demo and screenshots use fictional
+writers from Scout's built-in demo data, not real people.
+
+| Today | Shortlist | Issue | Search and tags | New topic |
+| --- | --- | --- | --- | --- |
+| ![Today](docs/screenshots/01-today.jpg) | ![Shortlist](docs/screenshots/03-shortlist.jpg) | ![Issue agents](docs/screenshots/05-issue-agents.jpg) | ![Search](docs/screenshots/07-search-tags.jpg) | ![New topic](docs/screenshots/09-new-topic.jpg) |
+
+More: [Stories deck](docs/screenshots/02-stories.jpg) · [Issue preview](docs/screenshots/06-issue-preview.jpg) ·
+[Tag catalog](docs/screenshots/08-tag-catalog.jpg) · [Siri card (rehearsal render)](docs/screenshots/11-siri-card.jpg)
+
+**In one line:** code ranks, Apple Intelligence explains. Every score, count, link and order comes
+from code; the on-device model writes sentences, and code checks each one before you see it.
+
+**Open data only.** Scout reads public RSS feeds (Medium's official feeds, Hacker News, any blog). It
+uses no Medium API and no account, and nothing you do leaves the device unless you export it.
+Scout is an independent project and is not affiliated with or endorsed by Medium.
+
 ## Screens
 
 - **Today**: the deck. Each card shows the writer's avatar (from their own feed), their best post
@@ -25,6 +44,13 @@ Scout grew out of MediumRSS, a 2023 tool I built to scout writers while editing 
 - **Search**: SwiftData-backed filters (last 7 days, 2+ posts, tag, blocked), results ordered by a
   match score computed in code, Core Spotlight semantic search (`CSUserQuery`) over shortlisted
   writers, and pitch import (PDF or screenshot, read with Vision `RecognizeDocumentsRequest`).
+- **Tags and topics**: every Medium tag on every fetched post is counted on device in a SwiftData
+  catalog. Search shows *potential tags* (tags that keep appearing beside your lane's tags) and the
+  whole catalog; **Explore** reads one tag's feed so the catalog grows. **New topic** turns any topic in
+  plain words ("blogging and newsletters", "Apple tech") into a lane: the model suggests tag names,
+  Scout reads each tag's Medium feed and keeps only tags that have posts.
+- **Add a site**: paste any site; Scout finds its RSS or Atom feeds and adds one as a lane. For a
+  writer's own site it reads `/llms.txt` (weekly) and shows what the site says about itself.
 - **Siri**: "Scout today's new writers in Scout" shows an interactive card with the top four
   writers, plus Open deck and Shortlist all. "Show my shortlist in Scout" opens the shortlist.
 
@@ -55,12 +81,29 @@ has learned and can reset it.
 ## How the model is used
 
 Every request goes through one `LanguageModelSession.DynamicProfile`, `ScoutProfile`. Its body
-switches on the active pack and the mode (`scouting`, `issueWriting`, `pitchReading`):
+switches on the active pack and the mode (`scouting`, `issueWriting`, `pitchReading`, `asking`,
+`tagging`, and the newsletter agents `curator`, `blurber`, `spotlight`, `editor`):
 
 - each branch has its own instructions and tools: `recentPosts` (a writer's stored posts) for text
   packs, `imageNotes` (the feed's caption text, never pixels) for visual packs;
 - each mode has its own temperature;
-- history is trimmed with `historyTransform`, and tool calls are logged in Settings.
+- history is trimmed with `historyTransform`, and tool calls are logged in Settings;
+- each role pack has one Foundation Models **Skill** (its house style, from Apple's
+  [`foundation-models-utilities`](https://github.com/apple/foundation-models-utilities)) offered only in
+  prose-writing modes. Code chooses which pack's skill exists; the model only decides when to load it;
+- model text follows the device language when the on-device model supports it; quoted evidence
+  stays word for word from the feed.
+
+### Newsletter agents
+
+The Issue screen drafts a newsletter with four agents on device, then a fifth step in code:
+
+1. **Curator** groups your picked stories into sections (it can only use the story IDs it is given).
+2. **Blurber** writes one line per story from its feed text.
+3. **Spotlight** introduces one shortlisted writer, with interview questions that must cite their posts.
+4. **Editor** titles the issue and writes a short intro.
+5. **Checker** (code) verifies every link, title and author against your data and drops anything that
+   fails, for example a Spotlight whose questions cite no real post.
 
 Code picks the branch; the model never chooses its own role. Writer statistics reach the model as a
 typed `PromptRepresentable` value (`AuthorStats`).
@@ -77,6 +120,7 @@ typed `PromptRepresentable` value (`AuthorStats`).
 Everything the model writes passes `TextGuard` before it is shown:
 
 - no digits and no links;
+- no empty praise ("shows deep understanding"): a card line has to say what the post does;
 - the "why" line must quote its evidence word for word from the feed;
 - a pitch summary may not add numbers the pitch lacks.
 
@@ -91,6 +135,22 @@ The match score is a fixed blend, built in `Matching.swift`:
 | Topic overlap with the lane's tags | 30% | Feed categories |
 | Posting frequency in the window | 20% | Post count |
 | Recency | 15% | Latest post date |
+
+## Does the ranking agree with an editor?
+
+`EditorialRankingEvaluation` (Apple's Evaluations framework) scores 25 Better Programming submissions I
+accepted (14) or passed on (11) as editor, using the deck's own code ranking, and reports the AUC: the
+chance an accepted piece ranks above a passed one (0.5 is a coin flip).
+
+| Lanes | AUC |
+| --- | --- |
+| Engineering editor pack | 0.24 |
+| Tech writer pack | 0.39 |
+
+Both are below a coin flip: matching a piece to a lane's topic does not predict an editor's taste,
+and on this set it leans toward pieces I passed on. An on-device model judge scored 0.62 on the same
+set in a separate experiment. Topic match finds candidates; it is not quality. The notes are private,
+so the test reads them from a local folder and is skipped without them.
 
 ## Data
 
@@ -127,10 +187,10 @@ xcodegen generate
 xcodebuild -project Scout.xcodeproj -scheme Scout -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Swift 6 language mode with complete concurrency checking; the build has no warnings.
+Swift 6 language mode with complete concurrency checking.
 
-ScoutKit's tests run on macOS with `swift test` in `Packages/ScoutKit`. The app's tests cover the
-SwiftData store and the model profile.
+ScoutKit's tests (87) run on macOS with `swift test` in `Packages/ScoutKit`. The app's tests cover the
+SwiftData store, the tag catalog and the model profile.
 
 Tests use Swift Testing for:
 
@@ -141,7 +201,9 @@ Tests use Swift Testing for:
 - pitch facts.
 
 An XCUITest checks that swiping updates the shortlist. `ScreenshotTour` captures screenshots on live
-data when `TEST_RUNNER_SCOUT_SCREENSHOT_DIR` is set.
+data and `DemoTour` records the README demo on demo data when `TEST_RUNNER_SCOUT_SCREENSHOT_DIR` is set.
+
+The app ships in English with a Hindi String Catalog (`Localizable.xcstrings`).
 
 Debug-only launch arguments:
 

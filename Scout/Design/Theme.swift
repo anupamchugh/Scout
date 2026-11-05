@@ -28,16 +28,25 @@ extension Color {
 
 /// Small monospaced caps for section labels, as in the mockups.
 struct MonoLabel: View {
-    let text: String
+    let text: Text
     var color: Color = .inkSecondary
 
-    init(_ text: String, color: Color = .inkSecondary) {
-        self.text = text
+    /// App copy: a String Catalog key, localized.
+    init(_ resource: LocalizedStringResource, color: Color = .inkSecondary) {
+        self.text = Text(resource)
+        self.color = color
+    }
+
+    /// Data (a lane name, a question): shown as is. Disfavoured, so a string literal is a catalog key, as with `Text`.
+    @_disfavoredOverload
+    init<S: StringProtocol>(_ text: S, color: Color = .inkSecondary) {
+        self.text = Text(verbatim: String(text))
         self.color = color
     }
 
     var body: some View {
-        Text(text.uppercased())
+        text
+            .textCase(.uppercase)
             .font(.caption2.monospaced().weight(.medium))
             .tracking(0.8)
             .foregroundStyle(color)

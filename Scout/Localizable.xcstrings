@@ -43,6 +43,16 @@
         }
       }
     },
+    "%@ · next issue": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · अगला अंक"
+          }
+        }
+      }
+    },
     "%@, seen beside your lane on %lld posts": {
       "localizations": {
         "en": {
@@ -98,22 +108,22 @@
         }
       }
     },
-    "%lld posts now": {
-      "localizations": {
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "अभी %lld पोस्ट"
-          }
-        }
-      }
-    },
     "%lld shortlisted": {
       "localizations": {
         "hi": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld शॉर्टलिस्ट में"
+          }
+        }
+      }
+    },
+    "%lld tags seen · posts carrying each": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld टैग देखे · हर टैग वाली पोस्ट"
           }
         }
       }
@@ -237,6 +247,16 @@
         }
       }
     },
+    "About, from their profile": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "परिचय, उनकी प्रोफ़ाइल से"
+          }
+        }
+      }
+    },
     "Add": {
       "localizations": {
         "hi": {
@@ -297,6 +317,26 @@
         }
       }
     },
+    "Agents · on device": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "एजेंट · डिवाइस पर"
+          }
+        }
+      }
+    },
+    "All my lanes": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मेरी सभी लेन"
+          }
+        }
+      }
+    },
     "Already in your catalog, close in meaning": {
       "localizations": {
         "hi": {
@@ -336,6 +376,9 @@
           }
         }
       }
+    },
+    "Apple Intelligence": {
+      "shouldTranslate": false
     },
     "Apple Intelligence declined this one.": {
       "localizations": {
@@ -403,6 +446,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apple tech, blogging, engineering management…"
+          }
+        }
+      }
+    },
+    "Arguments in the comments": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "टिप्पणियों में तर्क"
           }
         }
       }
@@ -477,12 +530,32 @@
         }
       }
     },
+    "Best this week": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस हफ़्ते की सबसे अच्छी"
+          }
+        }
+      }
+    },
     "Block %@": {
       "localizations": {
         "hi": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ को ब्लॉक करें"
+          }
+        }
+      }
+    },
+    "Blurber · one line per story": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blurber · हर कहानी पर एक पंक्ति"
           }
         }
       }
@@ -496,6 +569,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "रद्द करें"
+          }
+        }
+      }
+    },
+    "Checked on Medium": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium पर जाँचे गए"
+          }
+        }
+      }
+    },
+    "Checker": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जाँचकर्ता"
+          }
+        }
+      }
+    },
+    "Checker · verifying against your data": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जाँचकर्ता · आपके डेटा से मिलान"
           }
         }
       }
@@ -590,6 +693,16 @@
         }
       }
     },
+    "Curator · arranging sections": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Curator · हिस्से सजा रहा है"
+          }
+        }
+      }
+    },
     "Deck": {
       "localizations": {
         "hi": {
@@ -680,6 +793,26 @@
         }
       }
     },
+    "Editor · title and intro": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editor · शीर्षक और परिचय"
+          }
+        }
+      }
+    },
+    "Entries · drag to reorder": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "प्रविष्टियाँ · क्रम बदलने के लिए खींचें"
+          }
+        }
+      }
+    },
     "Evaluations": {
       "localizations": {
         "hi": {
@@ -736,6 +869,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "रेट किए गए रन एक्सपोर्ट करें (JSONL)"
+          }
+        }
+      }
+    },
+    "Feeds found · tap to add as a lane": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ीड मिलीं · लेन बनाने के लिए टैप करें"
           }
         }
       }
@@ -806,6 +949,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "@%@ को फ़ॉलो कर रहे हैं।"
+          }
+        }
+      }
+    },
+    "From Spotlight · shortlisted": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spotlight से · शॉर्टलिस्ट में"
+          }
+        }
+      }
+    },
+    "From their latest post": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "उनकी नई पोस्ट से"
           }
         }
       }
@@ -899,6 +1062,16 @@
         }
       }
     },
+    "Intro · Editor": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "परिचय · Editor"
+          }
+        }
+      }
+    },
     "Issue": {
       "localizations": {
         "hi": {
@@ -925,6 +1098,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "अंक का शीर्षक"
+          }
+        }
+      }
+    },
+    "Issue · Editor's title": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अंक · Editor का शीर्षक"
           }
         }
       }
@@ -965,6 +1148,56 @@
         }
       }
     },
+    "Last 24 hours": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पिछले 24 घंटे"
+          }
+        }
+      }
+    },
+    "Last 30 days": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पिछले 30 दिन"
+          }
+        }
+      }
+    },
+    "Last 7 days": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पिछले 7 दिन"
+          }
+        }
+      }
+    },
+    "Learned from swipes · computed in code": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "स्वाइप से सीखा · कोड से गिना"
+          }
+        }
+      }
+    },
+    "Links most to": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सबसे ज़्यादा लिंक"
+          }
+        }
+      }
+    },
     "Looking for feeds…": {
       "localizations": {
         "hi": {
@@ -997,6 +1230,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "मॉडल रन"
+          }
+        }
+      }
+    },
+    "Model tool calls · debug": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मॉडल टूल कॉल · डीबग"
           }
         }
       }
@@ -1291,6 +1534,36 @@
         }
       }
     },
+    "Pitches": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पिच"
+          }
+        }
+      }
+    },
+    "Posts / week": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पोस्ट / हफ़्ता"
+          }
+        }
+      }
+    },
+    "Potential tags · seen beside your lane tags": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "संभावित टैग · आपकी लेन के टैग के साथ दिखे"
+          }
+        }
+      }
+    },
     "Prepare feedback for Apple": {
       "localizations": {
         "hi": {
@@ -1440,6 +1713,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Scout ने जो सीखा उसे रीसेट करें"
+          }
+        }
+      }
+    },
+    "Role pack": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रोल पैक"
           }
         }
       }
@@ -1680,6 +1963,56 @@
         }
       }
     },
+    "Site says": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साइट कहती है"
+          }
+        }
+      }
+    },
+    "Sorted by match · code decides the order": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मेल के हिसाब से · क्रम कोड तय करता है"
+          }
+        }
+      }
+    },
+    "Spotlight · featuring a writer": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spotlight · एक लेखक को दिखा रहा है"
+          }
+        }
+      }
+    },
+    "Stories": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कहानियाँ"
+          }
+        }
+      }
+    },
+    "Story": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कहानी"
+          }
+        }
+      }
+    },
     "Suggested by Apple Intelligence · %@": {
       "localizations": {
         "hi": {
@@ -1700,12 +2033,32 @@
         }
       }
     },
+    "Suggested pairs": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सुझाई गई जोड़ियाँ"
+          }
+        }
+      }
+    },
     "Surfaced by": {
       "localizations": {
         "hi": {
           "stringUnit": {
             "state": "translated",
             "value": "किसने दिखाया"
+          }
+        }
+      }
+    },
+    "Surfaced by %lld of your lanes": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "आपकी %lld लेन ने दिखाया"
           }
         }
       }
@@ -1776,6 +2129,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "टैग कैटलॉग"
+          }
+        }
+      }
+    },
+    "Tags Scout already knows": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scout के जाने-पहचाने टैग"
+          }
+        }
+      }
+    },
+    "Tags this week": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस हफ़्ते के टैग"
           }
         }
       }
@@ -1860,6 +2233,16 @@
         }
       }
     },
+    "Title shape": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शीर्षक का ढंग"
+          }
+        }
+      }
+    },
     "Today": {
       "localizations": {
         "hi": {
@@ -1900,6 +2283,16 @@
         }
       }
     },
+    "Tools that returned nothing (this session)": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जिन टूल ने कुछ नहीं लौटाया (इस सत्र में)"
+          }
+        }
+      }
+    },
     "Try a longer window or another lane.": {
       "localizations": {
         "hi": {
@@ -1920,6 +2313,16 @@
         }
       }
     },
+    "Typical length": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "आम लंबाई"
+          }
+        }
+      }
+    },
     "What do you scout?": {
       "localizations": {
         "hi": {
@@ -1936,6 +2339,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "यह किस बारे में है (वैकल्पिक)"
+          }
+        }
+      }
+    },
+    "Why this builder · on-device model": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह बिल्डर क्यों · डिवाइस वाला मॉडल"
+          }
+        }
+      }
+    },
+    "Why this story · on-device model": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह कहानी क्यों · डिवाइस वाला मॉडल"
+          }
+        }
+      }
+    },
+    "Why this writer · on-device model": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह लेखक क्यों · डिवाइस वाला मॉडल"
           }
         }
       }
@@ -1980,6 +2413,26 @@
         }
       }
     },
+    "Writer spotlight · Spotlight agent": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लेखक स्पॉटलाइट · Spotlight एजेंट"
+          }
+        }
+      }
+    },
+    "Writers": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लेखक"
+          }
+        }
+      }
+    },
     "You already follow @%@.": {
       "localizations": {
         "hi": {
@@ -2000,8 +2453,28 @@
         }
       }
     },
+    "^[%lld post](inflect: true) now": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अभी %lld पोस्ट"
+          }
+        }
+      }
+    },
     "llms.txt": {
       "shouldTranslate": false
+    },
+    "match": {
+      "localizations": {
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मेल"
+          }
+        }
+      }
     },
     "scout-model-runs.jsonl": {
       "shouldTranslate": false

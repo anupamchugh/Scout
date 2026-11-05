@@ -46,7 +46,7 @@ struct StoryCardView: View {
                 .accessibilityElement(children: .combine)
             }
 
-            MonoLabel(story.lanesSurfacing > 1 ? "Surfaced by \(story.lanesSurfacing) of your lanes" : "Story")
+            if story.lanesSurfacing > 1 { MonoLabel("Surfaced by \(story.lanesSurfacing) of your lanes") } else { MonoLabel("Story") }
 
             if imageFirst, let url = post.imageURL.flatMap(URL.init(string:)) {
                 // The clear box sets the size; a fill-scaled image overlaid on it can't widen the card.

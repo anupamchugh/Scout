@@ -15,13 +15,13 @@ import SwiftData
 struct WhyDraft {
     @Guide(description: "A phrase of three to twelve words copied exactly from the feed text")
     var evidence: String
-    @Guide(description: "One plain sentence under twenty-five words on why this writer suits the lane, based only on the evidence. No numbers, no links.")
+    @Guide(description: "One plain sentence under twenty-five words saying what the post does for readers of the lane, starting with a verb such as Shows, Explains or Compares. Based only on the evidence. No praise words, no numbers, no links.")
     var line: String
 }
 
 @Generable
 struct OutreachDraft {
-    @Guide(description: "At most two sentences. Sentence one names the post title in quotes and repeats one specific point using the post's own words. Sentence two is a plain question asking them to write for the publication. No praise words, no numbers, no links, no greeting.")
+    @Guide(description: "At most two sentences. Sentence one names the post title in quotes and repeats one specific point using the post's own words. Sentence two is a plain question asking them to write for the publication. Speak to the writer as you. No praise words, no numbers, no links, no greeting.")
     var note: String
 }
 
@@ -172,7 +172,7 @@ enum Writer {
             "<feed>\(source)</feed>"
             "Why might this writer suit that section?"
         }.content
-        guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line) else { return nil }
+        guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line), !TextGuard.isPraise(draft.line) else { return nil }
         return draft.line.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -185,16 +185,16 @@ enum Writer {
             Why might this story suit that section?
             """
         let draft = try await session(.scouting).respond(to: prompt, generating: WhyDraft.self, options: ScoutMode.scouting.options).content
-        guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line) else { return nil }
+        guard TextGuard.quotes(draft.evidence, from: source), TextGuard.isClean(draft.line), !TextGuard.isPraise(draft.line) else { return nil }
         return draft.line.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// A two-sentence note that passes `OutreachCheck`; a draft that doesn't is replaced by the code-built template.
     private static func siteText(_ site: SiteContext?) -> String {
         guard let site, site.found else { return "" }
         return "\nTheir site says: \(site.summary) Sections: \(site.sectionTitles.joined(separator: ", "))."
     }
 
+    /// A two-sentence note that passes `OutreachCheck`; a draft that doesn't is replaced by the code-built template.
     static func outreach(title: String, snippet: String, lane: String) async throws -> String {
         let prompt = """
             Write an invitation to contribute to \(lane), based on this post.
@@ -214,13 +214,13 @@ enum Writer {
         return TextGuard.isClean(note) ? note.trimmingCharacters(in: .whitespacesAndNewlines) : nil
     }
 
-    /// Kept only if it adds no numbers the pitch text lacks and no links.
     /// The model's guesses at Medium tags for a topic. Only guesses: `ScoutModel.checkTags` keeps those whose feed has posts.
     static func tagGuesses(for topic: String) async throws -> [String] {
         try await session(.tagging).respond(to: "Topic: \(topic)", generating: TagGuessDraft.self,
                                             options: ScoutMode.tagging.options).content.tags
     }
 
+    /// Kept only if it adds no numbers the pitch text lacks and no links.
     static func pitchSummary(_ text: String) async throws -> String? {
         let excerpt = String(text.prefix(3000))
         let summary = try await session(.pitchReading).respond(to: "Summarise this pitch.\n<feed>\(excerpt)</feed>",

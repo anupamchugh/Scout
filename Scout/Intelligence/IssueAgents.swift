@@ -44,6 +44,16 @@ final class IssueAgents {
         case spotlight = "Spotlight · featuring a writer"
         case editor = "Editor · title and intro"
         case checker = "Checker · verifying against your data"
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .curator: "Curator · arranging sections"
+            case .blurber: "Blurber · one line per story"
+            case .spotlight: "Spotlight · featuring a writer"
+            case .editor: "Editor · title and intro"
+            case .checker: "Checker · verifying against your data"
+            }
+        }
     }
 
     private(set) var current: Step?

@@ -136,6 +136,8 @@ public struct ThreadBriefService<Transport: URLTransport>: Sendable {
     }
 
     /// `blockedAuthors` holds HN usernames; comments from those accounts never reach the model.
+    /// Runs off the caller's actor: fetching and cleaning up to a hundred comments must not hold the main thread.
+    @concurrent
     public func brief(storyID: Int, blockedAuthors: Set<String> = []) async throws -> ThreadBrief {
         let thread = try await reader.thread(storyID: storyID, maxComments: Self.commentCap)
         return try await brief(for: thread, blockedAuthors: blockedAuthors)

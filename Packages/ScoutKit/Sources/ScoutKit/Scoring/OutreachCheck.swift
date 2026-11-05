@@ -40,10 +40,27 @@ public enum OutreachCheck {
 
     /// A note built by code that meets every rule, used when the model's draft doesn't.
     public static func template(title: String, snippet: String, lane: String) -> String {
-        let clause = snippet.split(whereSeparator: { ".!?;:".contains($0) }).first.map(String.init) ?? snippet
-        let words = clause.split(separator: " ").prefix(9).joined(separator: " ")
+        let words = point(in: snippet, title: title).split(separator: " ").prefix(9).joined(separator: " ")
         let phrase = words.isEmpty ? "" : " and the point about “\(words.prefix(1).lowercased() + words.dropFirst())”"
         return "I read “\(title)”\(phrase). Would you write a piece along those lines for \(lane)?"
+    }
+
+    /// The first clause of the snippet that says something: not the title repeated, not a byline
+    /// ("by Ron McFarland, PhD"), at least four words. Empty when there is none.
+    static func point(in snippet: String, title: String) -> String {
+        let titleText = TextGuard.normalized(title)
+        let clauses = snippet.split(whereSeparator: { ".!?;:".contains($0) }).map { clause -> String in
+            var text = String(clause).trimmingCharacters(in: .whitespaces)
+            // A byline starts with "by" and a capitalised name; keep only what comes before it.
+            if let byline = text.range(of: #"(^|\s)[Bb]y\s+\p{Lu}"#, options: .regularExpression) {
+                text = String(text[..<byline.lowerBound]).trimmingCharacters(in: .whitespaces)
+            }
+            return text.trimmingCharacters(in: CharacterSet(charactersIn: ",—–- "))
+        }
+        return clauses.first { clause in
+            let normalized = TextGuard.normalized(clause)
+            return clause.split(separator: " ").count >= 4 && !titleText.contains(normalized)
+        } ?? ""
     }
 
     static func sentences(in text: String) -> [String] {

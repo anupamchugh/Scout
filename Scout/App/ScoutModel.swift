@@ -15,6 +15,13 @@ enum DeckWindow: String, CaseIterable, Identifiable, Sendable {
     case month = "Last 30 days"
 
     var id: String { rawValue }
+    var title: LocalizedStringResource {
+        switch self {
+        case .day: "Last 24 hours"
+        case .week: "Last 7 days"
+        case .month: "Last 30 days"
+        }
+    }
     var seconds: TimeInterval {
         switch self {
         case .day: 86_400
@@ -29,6 +36,12 @@ enum DeckMode: String, CaseIterable, Identifiable, Sendable {
     case writers = "Writers"
 
     var id: String { rawValue }
+    var title: LocalizedStringResource {
+        switch self {
+        case .stories: "Stories"
+        case .writers: "Writers"
+        }
+    }
 }
 
 private let log = Logger(subsystem: "com.anupamchugh.scout", category: "deck")

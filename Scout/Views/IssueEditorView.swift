@@ -65,7 +65,7 @@ struct IssueEditorView: View {
                         .onMove { move($0, $1, in: group.entries) }
                         .onDelete { delete($0, in: group.entries) }
                 } header: {
-                    MonoLabel(group.name.isEmpty ? "Entries · drag to reorder" : group.name)
+                    if group.name.isEmpty { MonoLabel("Entries · drag to reorder") } else { MonoLabel(group.name) }
                 } footer: {
                     if issue.entries.isEmpty { Text("Swipe a writer or story up in Today to add it here.") }
                 }
@@ -132,7 +132,7 @@ struct IssueEditorView: View {
                         } else {
                             Image(systemName: "circle").foregroundStyle(Color.hairline)
                         }
-                        Text(step.rawValue).font(.footnote)
+                        Text(step.title).font(.footnote)
                     }
                 }
             }
