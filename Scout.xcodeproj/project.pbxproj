@@ -76,6 +76,7 @@
 		A52B26E930AB663F38B47414 /* TagCatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8FD3C5F319CB88A51AD80F5 /* TagCatalogView.swift */; };
 		AF07AC50B4D463B4EAE0E55B /* PackSkills.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12E725B1CBBD83B5C16A035C /* PackSkills.swift */; };
 		AF7B1F6B043DD0AB5227E225 /* StoryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A78D27D6A51C837036C202A /* StoryCardView.swift */; };
+		AFB6181599841E16856DCFDC /* ScoutEvaluations.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD8BBE2DA88CCA75294E4EF /* ScoutEvaluations.swift */; };
 		B2A591B62F1EE84B3F517D5C /* MacRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00BFE4EA0627CA4216379E4 /* MacRootView.swift */; };
 		B72221205FCF09E7F01E2E04 /* ActionIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68A50751A709F057FB495A69 /* ActionIntents.swift */; };
 		B9A7DDFFC19CB716129BD5BD /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1632CE38968C64DB6C1E02B /* Store.swift */; };
@@ -167,6 +168,7 @@
 		E749A7E2AD3EDEFECCED67C5 /* SiriCardStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriCardStage.swift; sourceTree = "<group>"; };
 		E9C31A8650493F511A0F13AE /* ScoutMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutMacApp.swift; sourceTree = "<group>"; };
 		EA8ED62460DF2B4818E84DD2 /* ScreenshotTour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTour.swift; sourceTree = "<group>"; };
+		EAD8BBE2DA88CCA75294E4EF /* ScoutEvaluations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutEvaluations.swift; sourceTree = "<group>"; };
 		F255F3113598B2248D42AA87 /* ScoutIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutIntents.swift; sourceTree = "<group>"; };
 		F3733B4D5976AD15A921E225 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		F7A01A080871429A8D472355 /* ScoutMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScoutMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -377,6 +379,7 @@
 			isa = PBXGroup;
 			children = (
 				E1C34E941EBB401034F823D7 /* EvalReplayTests.swift */,
+				EAD8BBE2DA88CCA75294E4EF /* ScoutEvaluations.swift */,
 				6A7F8FEDCD8D1A021E300C4C /* ScriptedLanguageModel.swift */,
 				8B79E7DA20C1DD48BB136645 /* StoreTests.swift */,
 			);
@@ -647,6 +650,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				31D50C145D0D98269D6AA082 /* EvalReplayTests.swift in Sources */,
+				AFB6181599841E16856DCFDC /* ScoutEvaluations.swift in Sources */,
 				057F31985A28C6FE2BFA79CD /* ScriptedLanguageModel.swift in Sources */,
 				EE929D812E8C1B99FDFBBB94 /* StoreTests.swift in Sources */,
 			);
