@@ -254,3 +254,25 @@ final class Pitch {
         self.imported = imported
     }
 }
+
+/// What a writer's own site says about itself in /llms.txt. Fetched at most weekly; a 404 is stored as not found.
+@Model
+final class SiteContext {
+    @Attribute(.unique) var host: String
+    var found: Bool
+    var title: String
+    var summary: String
+    var sectionTitles: [String]
+    var fetched: Date
+
+    init(host: String, found: Bool, title: String = "", summary: String = "", sectionTitles: [String] = [], fetched: Date = .now) {
+        self.host = host
+        self.found = found
+        self.title = title
+        self.summary = summary
+        self.sectionTitles = sectionTitles
+        self.fetched = fetched
+    }
+
+    var isStale: Bool { Date.now.timeIntervalSince(fetched) > 7 * 86_400 }
+}

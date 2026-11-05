@@ -155,8 +155,10 @@ enum Writer {
 
     /// The card's "why this writer" line, kept only if its evidence is quoted and the line is clean.
     /// `stats` reaches the model as a typed `PromptRepresentable` value, not pasted text.
-    static func why(for candidate: AuthorCandidate, lane: LaneSpec, stats: AuthorStats?, hnStats: HNAuthorStats? = nil) async throws -> String? {
-        let source = candidate.sourceText
+    static func why(for candidate: AuthorCandidate, lane: LaneSpec, stats: AuthorStats?, hnStats: HNAuthorStats? = nil,
+                    site: SiteContext? = nil) async throws -> String? {
+        // The writer's own words from their site's llms.txt count as source text, under the same checks.
+        let source = candidate.sourceText + siteText(site)
         let draft = try await session(.scouting, authorKey: candidate.authorKey).respond(generating: WhyDraft.self, options: ScoutMode.scouting.options) {
             "Newsletter section: “\(lane.name)”, about \(lane.theme)."
             if let stats { stats }
@@ -169,8 +171,8 @@ enum Writer {
     }
 
     /// The story card's "why" line, under the same checks.
-    static func why(title: String, snippet: String, lane: LaneSpec) async throws -> String? {
-        let source = "\(title). \(snippet)"
+    static func why(title: String, snippet: String, lane: LaneSpec, site: SiteContext? = nil) async throws -> String? {
+        let source = "\(title). \(snippet)" + siteText(site)
         let prompt = """
             Newsletter section: “\(lane.name)”, about \(lane.theme).
             <feed>\(source)</feed>
@@ -182,6 +184,11 @@ enum Writer {
     }
 
     /// A two-sentence note that passes `OutreachCheck`; a draft that doesn't is replaced by the code-built template.
+    private static func siteText(_ site: SiteContext?) -> String {
+        guard let site, site.found else { return "" }
+        return "\nTheir site says: \(site.summary) Sections: \(site.sectionTitles.joined(separator: ", "))."
+    }
+
     static func outreach(title: String, snippet: String, lane: String) async throws -> String {
         let prompt = """
             Write an invitation to contribute to \(lane), based on this post.

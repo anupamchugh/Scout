@@ -17,6 +17,8 @@ struct StoryCardView: View {
     var avatarURL: URL?
     /// Opens the Ask sheet; nil hides the sparkles button.
     var onAsk: (() -> Void)?
+    /// The site's own description from llms.txt, when found.
+    var site: SiteContext?
     /// Opens the reader on a tap of the title.
     var onRead: (() -> Void)?
     /// Opens a Hacker News thread brief for HN stories.
@@ -71,6 +73,8 @@ struct StoryCardView: View {
             if !post.snippet.isEmpty {
                 Text(post.snippet).font(.body).foregroundStyle(Color.inkSecondary).lineLimit(imageFirst ? 2 : 3)
             }
+
+            if let site { SiteLine(site: site) }
 
             FlowLayout {
                 ForEach(imageFirst ? Array(post.categories.prefix(8)) : post.categories, id: \.self) { tag in

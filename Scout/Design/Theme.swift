@@ -140,3 +140,22 @@ struct AskButton: View {
         .accessibilityIdentifier("card.ask")
     }
 }
+
+/// "Site says:" from the writer's llms.txt, with what Scout found for the site.
+struct SiteLine: View {
+    let site: SiteContext
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                MonoLabel("Site says")
+                Text("RSS ✓ · llms.txt ✓").font(.caption2.monospaced()).foregroundStyle(Color.scoutGreen)
+            }
+            if !site.summary.isEmpty {
+                Text(verbatim: site.summary).font(.footnote).foregroundStyle(Color.inkSecondary).lineLimit(2)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("card.site")
+    }
+}

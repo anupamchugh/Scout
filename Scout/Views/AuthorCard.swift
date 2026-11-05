@@ -17,6 +17,8 @@ struct AuthorCard: View {
     var onAsk: (() -> Void)?
     /// Opens the reader on the best post.
     var onRead: (() -> Void)?
+    /// The site's own description from llms.txt, when found.
+    var site: SiteContext?
 
     private var post: PostRecord { candidate.bestPost }
 
@@ -58,6 +60,8 @@ struct AuthorCard: View {
                     .accessibilityIdentifier("card.title")
                 Text(meta).font(.caption).foregroundStyle(Color.inkSecondary)
             }
+
+            if let site { SiteLine(site: site) }
 
             if let stats {
                 Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 4) {

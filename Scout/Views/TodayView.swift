@@ -16,6 +16,7 @@ struct TodayView: View {
     @State private var showsSettings = false
     @State private var showsPackPicker = false
     @State private var showsNewLane = false
+    @State private var showsAddSite = false
     @State private var asking: AskSubject?
     @State private var threadBrief: ThreadBriefItem?
     @State private var reading: ReaderItem?
@@ -51,7 +52,8 @@ struct TodayView: View {
                     } else {
                     AuthorCard(candidate: candidate, why: model.whyLines[candidate.authorKey],
                                stats: model.authorStats[candidate.authorKey], onAsk: { asking = .writer(candidate) },
-                               onRead: { reading = ReaderItem(id: candidate.bestPost.guid, subject: .writer(candidate)) })
+                               onRead: { reading = ReaderItem(id: candidate.bestPost.guid, subject: .writer(candidate)) },
+                               site: model.siteContext(for: candidate.bestPost))
                         .contextMenu {
                             Button("Block \(candidate.name)", systemImage: "hand.raised", role: .destructive) { model.block(candidate) }
                         }
@@ -63,6 +65,7 @@ struct TodayView: View {
                 SwipeDeck(items: model.storyDeck, onDecide: { model.decideStory($0, $1) }) { story in
                     StoryCardView(story: story, laneTags: laneTags, why: model.storyWhyLines[story.id], imageFirst: visual,
                               avatarURL: model.avatars[story.post.authorKey], onAsk: { asking = .story(story) },
+                              site: model.siteContext(for: story.post),
                               onRead: { reading = ReaderItem(id: story.id, subject: .story(story)) },
                               onThreadBrief: { threadBrief = ThreadBriefItem(id: $0) })
                 }
@@ -75,6 +78,7 @@ struct TodayView: View {
         .sheet(isPresented: $showsSettings) { SettingsView() }
         .sheet(isPresented: $showsPackPicker) { PackPickerView() }
         .sheet(isPresented: $showsNewLane) { NewLaneView() }
+        .sheet(isPresented: $showsAddSite) { AddSiteView() }
         .sheet(item: $asking) { AskSheet(subject: $0) }
         .sheet(item: $threadBrief) { ThreadBriefView(storyID: $0.id) }
         .sheet(item: $reading) { ReaderView(guid: $0.id, askSubject: $0.subject) }
@@ -121,6 +125,7 @@ struct TodayView: View {
                 ForEach(lanes.filter { $0.packID == model.activePack.id }) { Text($0.name).tag($0.name) }
             }
             Button("New lane…", systemImage: "plus") { showsNewLane = true }
+            Button("Add a site…", systemImage: "globe") { showsAddSite = true }
             Picker("Window", selection: $model.window) {
                 ForEach(DeckWindow.allCases) { Text($0.rawValue).tag($0) }
             }
@@ -155,6 +160,72 @@ struct ReaderItem: Identifiable {
 
 struct ThreadBriefItem: Identifiable {
     let id: Int
+}
+
+/// Paste a site; Scout finds its RSS or Atom feeds and adds one as a lane.
+struct AddSiteView: View {
+    @Environment(ScoutModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    @State private var address = ""
+    @State private var feeds: [DiscoveredFeed] = []
+    @State private var message: String?
+    @State private var searching = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("swiftbysundell.com", text: $address)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.URL)
+                        .onSubmit { Task { await find() } }
+                        .accessibilityIdentifier("addSite.address")
+                    Button(searching ? "Looking for feeds…" : "Find feeds", systemImage: "magnifyingglass") { Task { await find() } }
+                        .disabled(address.isEmpty || searching)
+                        .accessibilityIdentifier("addSite.find")
+                } footer: {
+                    Text("Scout reads the page's own feed links, follows redirects and tries common feed paths. Optional lanes: Hacker News, Show HN and Apple developer news are already in the Engineering pack.")
+                }
+                if let message { Section { Text(message).foregroundStyle(Color.inkSecondary) } }
+                if !feeds.isEmpty {
+                    Section {
+                        ForEach(feeds) { feed in
+                            Button {
+                                model.addSite(feed, name: feed.title)
+                                dismiss()
+                            } label: {
+                                VStack(alignment: .leading) {
+                                    Text(feed.title).font(.headline)
+                                    Text(feed.url.absoluteString).font(.caption).foregroundStyle(Color.inkSecondary)
+                                }
+                            }
+                            .accessibilityIdentifier("addSite.result")
+                        }
+                    } header: { MonoLabel("Feeds found · tap to add as a lane") }
+                }
+            }
+            .navigationTitle("Add a site")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+
+    private func find() async {
+        searching = true
+        defer { searching = false }
+        message = nil
+        do {
+            feeds = try await FeedDiscovery.find(address)
+        } catch FeedDiscoveryError.notAWebAddress {
+            message = "That doesn't look like a web address."
+        } catch FeedDiscoveryError.unreachable(let reason) {
+            message = reason
+        } catch {
+            feeds = []
+            message = "No RSS or Atom feed found on that site."
+        }
+    }
 }
 
 /// Make a lane from tags seen this week and from tag pairs that keep appearing together.

@@ -57,6 +57,8 @@ final class ScoutModel {
     private(set) var storyDeck: [StoryCandidate] = []
     /// Tag pairs that keep appearing together in the window, offered as new lanes.
     private(set) var suggestedPairs: [(pair: TagPair, count: Int)] = []
+    /// llms.txt context for writers' own sites, by host (only found ones).
+    private(set) var siteContexts: [String: SiteContext] = [:]
     /// Writers' avatars from their own feeds, by author key.
     private(set) var avatars: [String: URL] = [:]
     /// Hacker News poster statistics from the official API, computed in code, by author key ("hn:<user>").
@@ -217,6 +219,9 @@ final class ScoutModel {
             storyDeck = Array(Matching.applyTaste(Array(stories.prefix(60)), taste: taste, similarity: storySimilarity).prefix(40))
         }
         fill(writerSimilarity: [:], storySimilarity: [:])
+        await loadSiteContexts()
+        guard !Task.isCancelled else { return }
+        applySiteSignal(lane)
         log.info("load \(generation) filled writers=\(self.deck.count) stories=\(self.storyDeck.count) ranked=\(stories.count)")
         prefetchWhy()
 
@@ -229,6 +234,62 @@ final class ScoutModel {
         fill(writerSimilarity: writerSimilarity, storySimilarity: storySimilarity)
         deck.removeAll { !remainingWriters.contains($0.authorKey) }
         storyDeck.removeAll { !remainingStories.contains($0.id) }
+    }
+
+    /// Fetches /llms.txt for the personal sites behind the top cards, at most weekly per site, quietly on 404.
+    private func loadSiteContexts() async {
+        let hosts = Set((storyDeck.prefix(15).map(\.post) + deck.prefix(10).map(\.bestPost)).compactMap(\.domain))
+            .filter(LLMSTxt.isPersonalDomain)
+        let stored = Dictionary(((try? context.fetch(FetchDescriptor<SiteContext>())) ?? []).map { ($0.host, $0) },
+                                uniquingKeysWith: { first, _ in first })
+        for host in hosts.sorted() {
+            if let existing = stored[host], !existing.isStale {
+                if existing.found { siteContexts[host] = existing }
+                continue
+            }
+            guard !Task.isCancelled else { return }
+            let document = await Self.fetchLLMSTxt(host: host)
+            let record = stored[host] ?? SiteContext(host: host, found: false)
+            if stored[host] == nil { context.insert(record) }
+            record.found = document != nil
+            record.title = document?.title ?? ""
+            record.summary = document?.summary ?? ""
+            record.sectionTitles = document?.sectionTitles ?? []
+            record.fetched = .now
+            if record.found { siteContexts[host] = record }
+        }
+        try? context.save()
+    }
+
+    @concurrent
+    private static func fetchLLMSTxt(host: String) async -> LLMSTxtDocument? {
+        guard let url = URL(string: "https://\(host)/llms.txt"),
+              let (data, response) = try? await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 10)),
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        return LLMSTxt.parse(String(decoding: data.prefix(200_000), as: UTF8.self))
+    }
+
+    /// A small boost, in code, for cards whose site's llms.txt sections overlap the lane.
+    private func applySiteSignal(_ lane: LaneSpec) {
+        func boost(_ post: PostRecord) -> Int {
+            guard let host = post.domain, let site = siteContexts[host] else { return 0 }
+            return Int((6 * LLMSTxt.laneOverlap(sectionTitles: site.sectionTitles, lane: lane)).rounded())
+        }
+        storyDeck = storyDeck.map { $0.withScore(min(100, $0.score + boost($0.post))) }.sorted { $0.score > $1.score }
+        deck = deck.map { candidate in
+            var updated = candidate.withScore(min(100, candidate.score + boost(candidate.bestPost)))
+            updated.avatarURL = candidate.avatarURL
+            return updated
+        }.sorted { $0.score > $1.score }
+    }
+
+    func siteContext(for post: PostRecord) -> SiteContext? {
+        post.domain.flatMap { siteContexts[$0] }
+    }
+
+    /// Adds a discovered feed as a lane in the active pack.
+    func addSite(_ feed: DiscoveredFeed, name: String) {
+        addLane(name: name, tags: [feed.url.absoluteString], theme: "Posts from \(feed.title)")
     }
 
     /// Similarity to what you liked: Vision feature prints of images for visual packs,
@@ -443,7 +504,8 @@ final class ScoutModel {
         for story in storyDeck.prefix(3) where !whyRequested.contains(story.id) {
             whyRequested.insert(story.id)
             Task {
-                if let line = try? await Writer.why(title: story.post.title, snippet: story.post.snippet, lane: lane) {
+                if let line = try? await Writer.why(title: story.post.title, snippet: story.post.snippet, lane: lane,
+                                                    site: siteContext(for: story.post)) {
                     storyWhyLines[story.id] = line
                 }
             }
@@ -452,7 +514,7 @@ final class ScoutModel {
             whyRequested.insert(candidate.authorKey)
             Task {
                 if let line = try? await Writer.why(for: candidate, lane: lane, stats: authorStats[candidate.authorKey],
-                                                    hnStats: hnStats[candidate.authorKey]) {
+                                                    hnStats: hnStats[candidate.authorKey], site: siteContext(for: candidate.bestPost)) {
                     whyLines[candidate.authorKey] = line
                 }
             }

@@ -76,6 +76,8 @@ extension RolePack {
                      theme: "Builders showing projects they made: tools, apps and libraries"),
             PackLane(name: "Swift releases", sources: ["https://github.com/swiftlang/swift/releases.atom"],
                      theme: "Swift toolchain releases and snapshots"),
+            PackLane(name: "Apple developer news", sources: ["https://developer.apple.com/news/rss/news.rss"],
+                     theme: "Apple platform announcements, betas and App Store changes for developers"),
         ],
         cardFields: [.avatar, .bestPost, .stats, .tags, .why],
         signals: [.semantic, .tagOverlap, .postsPerWeek, .recency],
