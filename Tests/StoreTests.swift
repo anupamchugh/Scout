@@ -71,3 +71,41 @@ struct ProfileTests {
         #expect(Ingest.author(item, .feed(URL(string: "https://news.ycombinator.com/rss")!)) == "example.com")
     }
 }
+
+@MainActor
+struct TagCatalogStoreTests {
+
+    /// Each post counts once, however many tag feeds surfaced it; potential tags come from what shared posts.
+    @Test func ingestFillsTheCatalogOncePerPost() throws {
+        let container = ScoutStore.make(inMemory: true)
+        let context = container.mainContext
+        let shared = item("https://medium.com/p/1", link: "https://medium.com/@a/one", tags: ["ai", "rag", "llm"])
+        var report = FeedClient.Report()
+        report.items[.tag("ai")] = [shared, item("https://medium.com/p/2", link: "https://medium.com/@b/two", tags: ["ai", "rag"])]
+        report.items[.tag("rag")] = [shared]
+        report.items[.author("c")] = [item("https://medium.com/p/3", link: "https://medium.com/@c/three",
+                                           tags: ["engineering-management", "programming"])]
+        try Ingest.upsert(report, into: context, now: now)
+
+        let records = Dictionary(uniqueKeysWithValues: TagCatalogStore.all(context).map { ($0.tag, $0) })
+        #expect(records["ai"]?.postCount == 2)
+        #expect(records["rag"]?.postCount == 2)
+        #expect(records["engineering-management"]?.postCount == 1, "a writer's own feed adds its tags too")
+        #expect(records["ai"]?.neighbours["rag"] == 2)
+
+        let potential = TagCatalogStore.potential(for: ["ai"], in: context)
+        #expect(potential.map(\.tag) == ["rag"], "llm shared only one post, under the minimum of two")
+    }
+
+    @Test func backfillBuildsTheCatalogFromStoredPosts() throws {
+        let container = ScoutStore.make(inMemory: true)
+        let context = container.mainContext
+        context.insert(StoredPost(guid: "g", title: "T", link: "https://medium.com/@w/t", authorName: "W", authorKey: "w",
+                                  handle: "w", snippet: "", categories: ["swift", "ios"], foundUnder: ["swift"],
+                                  published: now, firstSeen: now, readingMinutes: nil, imageURL: nil))
+        try TagCatalogStore.backfillIfEmpty(context)
+        #expect(TagCatalogStore.all(context).map(\.tag).sorted() == ["ios", "swift"])
+        try TagCatalogStore.backfillIfEmpty(context)
+        #expect(TagCatalogStore.all(context).first { $0.tag == "swift" }?.postCount == 1, "a second backfill is a no-op")
+    }
+}

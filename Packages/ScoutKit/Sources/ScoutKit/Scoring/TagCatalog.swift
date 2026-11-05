@@ -28,6 +28,12 @@ public enum TagCatalog {
         public let together: Int
         /// Posts that carried this tag at all.
         public let seen: Int
+
+        public init(tag: String, together: Int, seen: Int) {
+            self.tag = tag
+            self.together = together
+            self.seen = seen
+        }
     }
 
     /// Tags that share posts with `laneTags`, most shared first (ties: more seen, then alphabetical).

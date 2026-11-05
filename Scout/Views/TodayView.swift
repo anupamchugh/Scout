@@ -193,6 +193,11 @@ struct NewLaneView: View {
                         }
                     }
                 } header: { MonoLabel("Tags this week") }
+                if !picked.isEmpty {
+                    PotentialTagsSection(laneTags: Set(picked), picked: Set(picked)) { tag in
+                        if let index = picked.firstIndex(of: tag) { picked.remove(at: index) } else { picked.append(tag) }
+                    }
+                }
             }
             .navigationTitle("New lane")
             .navigationBarTitleDisplayMode(.inline)

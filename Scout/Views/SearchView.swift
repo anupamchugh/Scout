@@ -49,6 +49,17 @@ struct SearchView: View {
                 Section {
                     filters.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
                 }
+                PotentialTagsSection(laneTags: model.activeLane.tags, picked: tag.map { [$0] } ?? []) { picked in
+                    tag = tag == picked ? nil : picked
+                }
+                Section {
+                    NavigationLink {
+                        TagCatalogView { picked in tag = picked }
+                    } label: {
+                        Label("Every tag Scout has seen", systemImage: "tag")
+                    }
+                    .accessibilityIdentifier("search.catalog")
+                }
                 Section {
                     ForEach(results) { result in
                         HStack {
@@ -177,7 +188,11 @@ struct SearchView: View {
         let blockedKeys = includeBlocked ? Set<String>() : Set(blocked.map(\.authorKey))
         let lane = model.activeLane
         let lanes = model.laneSpecs
-        if tag == nil { tagOptions = TagCooccurrence.tagCounts(allPosts).prefix(40).map(\.tag) }
+        if tag == nil {
+            // The catalog keeps every tag ever seen; fall back to this window's tags before it fills.
+            let catalog = TagCatalogStore.all(context, limit: 60).map(\.tag)
+            tagOptions = catalog.isEmpty ? TagCooccurrence.tagCounts(allPosts).prefix(40).map(\.tag) : catalog
+        }
         writerOptions = Matching.candidates(from: allPosts, lane: lane, semantic: [:], excluding: blockedKeys, now: now,
                                             window: now.timeIntervalSince(cutoff)).prefix(30).map { ($0.authorKey, $0.name) }
         let posts = allPosts.filter { post in

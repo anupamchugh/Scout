@@ -1,6 +1,7 @@
 name: Scout
 options:
   bundleIdPrefix: com.anupamchugh
+  developmentLanguage: en
   deploymentTarget:
     iOS: "27.0"
   createIntermediateGroups: true
@@ -13,9 +14,14 @@ settings:
     CODE_SIGN_STYLE: Automatic
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
 packages:
   ScoutKit:
     path: Packages/ScoutKit
+  FoundationModelsUtilities:
+    url: https://github.com/apple/foundation-models-utilities
+    exactVersion: 1.0.0-beta5
 targets:
   Scout:
     type: application
@@ -26,6 +32,7 @@ targets:
         excludes: ["Info.plist"]
     dependencies:
       - package: ScoutKit
+      - package: FoundationModelsUtilities
     info:
       path: Scout/Info.plist
       properties:

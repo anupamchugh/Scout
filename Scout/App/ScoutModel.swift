@@ -91,6 +91,7 @@ final class ScoutModel {
         }
         #endif
         ScoutStore.seedIfNeeded(container.mainContext, pack: activePack)
+        try? TagCatalogStore.backfillIfEmpty(container.mainContext)
         Writer.pack = activePack
         Writer.container = container
     }
@@ -457,6 +458,19 @@ final class ScoutModel {
             }
         }
     }
+
+    /// Fetches one Medium tag's public feed so its posts, and the tags beside it, join the local catalog.
+    /// Returns how many new posts were stored.
+    @discardableResult
+    func exploreTag(_ tag: String) async -> Int {
+        let report = await fetch([.tag(tag)])
+        let inserted = (try? Ingest.upsert(report, into: context)) ?? 0
+        catalogVersion += 1
+        return inserted
+    }
+
+    /// Bumped when the tag catalog changes, so views re-read it.
+    private(set) var catalogVersion = 0
 
     /// The article's Markdown: stored from a full-text feed, or fetched from the writer's own Medium feed
     /// (tag feeds carry only a snippet). Nil when no feed has the full text.

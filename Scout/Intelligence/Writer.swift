@@ -93,6 +93,15 @@ enum Writer {
         Refer to a writer by name or as they/them; never guess anyone's gender.
         """
 
+    /// Model text follows the person's language when the on-device model supports it. Evidence stays a
+    /// verbatim copy of the feed, whatever its language, so the quote check still holds.
+    nonisolated static func languageInstructions(locale: Locale = .current,
+                                                 supported: (Locale) -> Bool = { SystemLanguageModel.default.supportsLocale($0) }) -> String {
+        guard let code = locale.language.languageCode?.identifier, code != "en", supported(locale) else { return "" }
+        let name = Locale(identifier: "en").localizedString(forLanguageCode: code) ?? code
+        return "Write every sentence for the editor in \(name). Copy any quoted phrase exactly as the feed text has it, in its own language."
+    }
+
     /// Set by the app when the role pack or store changes.
     static var pack: RolePack = .engineering
     static var container: ModelContainer?
@@ -103,7 +112,8 @@ enum Writer {
     /// pack's fixed instructions.
     static func session(_ mode: ScoutMode, authorKey: String? = nil, storyGuid: String? = nil) -> LanguageModelSession {
         guard let container else {
-            return LanguageModelSession(instructions: instructions + " " + ScoutProfile.roleInstructions(pack: pack, mode: mode))
+            return LanguageModelSession(instructions: instructions + " " + ScoutProfile.roleInstructions(pack: pack, mode: mode)
+                                        + " " + languageInstructions())
         }
         return LanguageModelSession(profile: ScoutProfile(pack: pack, mode: mode, container: container,
                                                           authorKey: authorKey, storyGuid: storyGuid, languageModel: languageModel))
@@ -138,7 +148,7 @@ enum Writer {
 
     /// Identifies the instructions a run used, so evaluations can compare versions.
     static func instructionsVersion(_ mode: ScoutMode) -> String {
-        let text = instructions + ScoutProfile.roleInstructions(pack: pack, mode: mode)
+        let text = instructions + ScoutProfile.roleInstructions(pack: pack, mode: mode) + languageInstructions()
         let hash = text.unicodeScalars.reduce(UInt64(1469598103934665603)) { ($0 ^ UInt64($1.value)) &* 1099511628211 }
         return String(hash, radix: 16).prefix(8).description
     }

@@ -9,6 +9,7 @@
 
 import Foundation
 import FoundationModels
+import FoundationModelsUtilities
 import Observation
 import ScoutKit
 import SwiftData
@@ -80,6 +81,8 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
     var storyGuid: String?
     /// Nil is the system model; tests supply a scripted one.
     var languageModel: (any LanguageModel)?
+    /// Which pack skills this session's model has activated.
+    var skillActivations = SkillActivations()
 
     static let historyLimit = 4
 
@@ -98,6 +101,11 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
         LanguageModelSession.Profile {
             Instructions(Writer.instructions)
             Instructions(Self.roleInstructions(pack: pack, mode: mode))
+            Instructions(Writer.languageInstructions())
+            if PackSkills.offered(in: mode) {
+                // Only the active pack's style is on offer; code chose the pack.
+                Skills(activations: skillActivations, strictSchema: true) { PackSkills.skill(for: pack) }
+            }
             if mode == .scouting && !pack.isVisual, let authorKey {
                 RecentPostsTool(authorKey: authorKey, container: container)
             }

@@ -9,7 +9,7 @@ import SwiftData
 
 enum ScoutStore {
     static let schema = Schema([StoredPost.self, AuthorInfo.self, Lane.self, Decision.self, StoryPick.self, BlockedAuthor.self,
-                                IssueDraft.self, IssueEntry.self, Pitch.self, TasteRecord.self, ModelRun.self])
+                                IssueDraft.self, IssueEntry.self, Pitch.self, TasteRecord.self, ModelRun.self, TagRecord.self])
 
     /// One store for the app and its App Intents.
     static let container: ModelContainer = make(inMemory: false)
@@ -130,6 +130,7 @@ enum Ingest {
                         HTMLToMarkdown.convert($0, codeLanguage: HTMLToMarkdown.codeLanguage(forTags: item.categories))
                     }
                     context.insert(post)
+                    try TagCatalogStore.record(item.categories, in: context, now: now)
                     byGuid[item.guid] = post
                     byLink[post.link] = post
                     inserted += 1
