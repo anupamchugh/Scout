@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FoundationModels
 import ScoutKit
 import SwiftData
 import Testing
@@ -69,6 +70,24 @@ struct ProfileTests {
                             link: URL(string: "https://example.com/tool")!, creator: "", published: now,
                             categories: [], snippet: "")
         #expect(Ingest.author(item, .feed(URL(string: "https://news.ycombinator.com/rss")!)) == "example.com")
+    }
+
+    /// One question that calls two tools (a skill, then recentPosts) is five entries, more than `historyLimit`.
+    /// The model must still get that question, not instructions alone (which it rejects), as the Ask evaluation found.
+    @Test func aTurnWithSeveralToolCallsKeepsItsQuestion() {
+        let text = { (s: String) in [Transcript.Segment.text(.init(content: s))] }
+        let call = { (name: String) in
+            Transcript.Entry.toolCalls(.init([.init(id: name, toolName: name, arguments: GeneratedContent(properties: ["all": true]))]))
+        }
+        let output = { (name: String) in Transcript.Entry.toolOutput(.init(id: name, toolName: name, segments: text("ok"))) }
+        let earlier: [Transcript.Entry] = [.prompt(.init(segments: text("Earlier question"))), .response(.init(assetIDs: [], segments: text("Earlier answer")))]
+        let turn: [Transcript.Entry] = [.prompt(.init(segments: text("What else has this writer written about?"))),
+                                        call("activateSkill"), output("activateSkill"), call("recentPosts"), output("recentPosts")]
+        let instructions = Transcript.Entry.instructions(.init(segments: text("Rules"), toolDefinitions: []))
+
+        let kept = ScoutProfile.shortHistory([instructions] + earlier + turn)
+        #expect(kept.map(\.id) == ([instructions] + turn).map(\.id))
+        #expect(!kept.contains { $0.id == earlier[0].id }, "an older turn beyond the limit is still dropped")
     }
 }
 

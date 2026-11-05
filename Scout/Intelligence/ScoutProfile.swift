@@ -169,13 +169,16 @@ struct ScoutProfile: LanguageModelSession.DynamicProfile {
     }
 
     /// Instructions plus the last few entries, starting on a prompt so a question keeps its answer.
+    /// When the window starts inside a turn, it widens back to that turn's prompt: a question that called
+    /// several tools stays whole, rather than being cut down to instructions alone.
     static func shortHistory(_ entries: [Transcript.Entry]) -> [Transcript.Entry] {
         let instructions = entries.filter { if case .instructions = $0 { true } else { false } }
-        var recent = Array(entries.filter { if case .instructions = $0 { false } else { true } }.suffix(historyLimit))
-        while let first = recent.first, !{ if case .prompt = first { true } else { false } }() {
-            recent.removeFirst()
+        let rest = entries.filter { if case .instructions = $0 { false } else { true } }
+        var start = max(0, rest.count - historyLimit)
+        while start > 0, !{ if case .prompt = rest[start] { true } else { false } }() {
+            start -= 1
         }
-        return instructions + recent
+        return instructions + rest[start...]
     }
 }
 
