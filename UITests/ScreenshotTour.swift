@@ -95,6 +95,14 @@ final class ScreenshotTour: XCTestCase {
         app.tabBars.buttons["Search"].tap()
         sleep(3)
         shoot("06-search")
+        let catalog = app.buttons["search.catalog"]
+        if catalog.waitForExistence(timeout: 5) {
+            catalog.tap()
+            sleep(2)
+            shoot("06b-tag-catalog")
+            app.navigationBars.buttons.firstMatch.tap()
+            sleep(1)
+        }
         app.tabBars.buttons["Search"].tap()
         let field = app.searchFields.firstMatch
         if field.waitForExistence(timeout: 5) {
@@ -103,6 +111,23 @@ final class ScreenshotTour: XCTestCase {
             sleep(5)
             shoot("07-search-query")
         }
+    }
+
+    /// The same app in Hindi: catalog strings in hi, model text in Hindi where the on-device model supports it.
+    @MainActor
+    func testHindi() throws {
+        try XCTSkipIf(folder == nil, "SCOUT_SCREENSHOT_DIR not set")
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(hi)", "-AppleLocale", "hi_IN", "-pack", "engineering-editor"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["deck.card"].firstMatch.waitForExistence(timeout: 90))
+        sleep(8)
+        shoot("09-today-hindi")
+        app.terminate()
+        app.launchArguments += ["-tab", "search"]
+        app.launch()
+        sleep(6)
+        shoot("10-search-hindi")
     }
 
     @MainActor
