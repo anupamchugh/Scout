@@ -85,13 +85,17 @@ struct IssueEditorView: View {
         .scrollContentBackground(.hidden)
         .background(Color.paper)
         .navigationTitle(issue.title)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
+            #if os(iOS)
             ToolbarItem { EditButton() }
+            #endif
             ToolbarItem {
                 Menu("Export", systemImage: "square.and.arrow.up") {
                     Button(copied ? "Copied" : "Copy Markdown", systemImage: "doc.on.doc") {
-                        UIPasteboard.general.string = IssueRenderer.markdown(content)
+                        Pasteboard.copy(IssueRenderer.markdown(content))
                         copied = true
                     }
                     ShareLink("Share Markdown / HTML", item: IssueExport(issue: content),
@@ -164,8 +168,8 @@ struct IssueEntryRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Group {
-                if let data = entry.previewImage, let image = UIImage(data: data) {
-                    Image(uiImage: image).resizable().scaledToFill()
+                if let data = entry.previewImage, let image = PlatformImage(data: data) {
+                    Image(platformImage: image).resizable().scaledToFill()
                 } else {
                     Image(systemName: "doc.richtext").foregroundStyle(Color.inkSecondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.paper)
@@ -237,7 +241,9 @@ struct IssuePreview: View {
             }
             .background(Color.paper)
             .navigationTitle("Preview")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar { Button("Done") { dismiss() }.accessibilityIdentifier("preview.done") }
         }
     }

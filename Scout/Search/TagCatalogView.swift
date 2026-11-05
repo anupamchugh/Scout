@@ -81,7 +81,9 @@ struct TagCatalogView: View {
             Section {
                 HStack {
                     TextField("A Medium tag, e.g. engineering-management", text: $newTag)
+                        #if os(iOS)
                         .textInputAutocapitalization(.never)
+                        #endif
                         .autocorrectionDisabled()
                         .onSubmit { Task { await explore() } }
                         .accessibilityIdentifier("catalog.explore.field")

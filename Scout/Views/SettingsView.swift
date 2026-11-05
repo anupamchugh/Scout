@@ -156,8 +156,12 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Color.paper)
             .navigationTitle("Settings")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
+            #if os(iOS)
             .toolbar { Button("Done") { dismiss() } }
+            #endif
             .fileImporter(isPresented: $importing, allowedContentTypes: [.scoutPack, .json]) { result in
                 switch result {
                 case .success(let url):

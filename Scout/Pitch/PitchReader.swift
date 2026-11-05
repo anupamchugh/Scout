@@ -6,7 +6,11 @@
 import Foundation
 import PDFKit
 import ScoutKit
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 import Vision
 
 enum PitchReader {
@@ -25,7 +29,7 @@ enum PitchReader {
                 guard let page = document.page(at: index) else { continue }
                 let bounds = page.bounds(for: .mediaBox)
                 let image = page.thumbnail(of: CGSize(width: bounds.width * 2, height: bounds.height * 2), for: .mediaBox)
-                if let data = image.pngData() { images.append(data) }
+                if let data = pngData(image) { images.append(data) }
             }
         } else {
             images.append(try Data(contentsOf: url))
@@ -39,5 +43,13 @@ enum PitchReader {
         let text = pages.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { throw Failure.noText }
         return PitchFacts(text: text)
+    }
+
+    private static func pngData(_ image: PlatformImage) -> Data? {
+        #if canImport(UIKit)
+        return image.pngData()
+        #else
+        return image.tiffRepresentation.flatMap(NSBitmapImageRep.init(data:))?.representation(using: .png, properties: [:])
+        #endif
     }
 }

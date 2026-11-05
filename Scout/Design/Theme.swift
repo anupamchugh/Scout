@@ -5,7 +5,11 @@
 
 import ScoutKit
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 
 /// The approved palette, with dark-mode counterparts.
 extension Color {
@@ -18,11 +22,19 @@ extension Color {
     static let hairline = Color(light: 0xE4E0D6, dark: 0x34322D)
 
     init(light: UInt32, dark: UInt32) {
+        #if canImport(UIKit)
         self.init(uiColor: UIColor { traits in
             let hex = traits.userInterfaceStyle == .dark ? dark : light
             return UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
                            blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
         })
+        #else
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            let hex = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            return NSColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
+                           blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        })
+        #endif
     }
 }
 

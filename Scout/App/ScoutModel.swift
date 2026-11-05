@@ -512,24 +512,32 @@ final class ScoutModel {
 
     /// Asks the model for the top cards' "why" lines; only lines that pass `TextGuard` are kept.
     private func prefetchWhy() {
-        guard ModelAvailability.current.isAvailable else { return }
+        for story in storyDeck.prefix(3) { explain(story) }
+        for candidate in deck.prefix(3) { explain(candidate) }
+    }
+
+    /// Asks for one story's "why" line, once; the Mac list calls this for the selected row.
+    func explain(_ story: StoryCandidate) {
+        guard ModelAvailability.current.isAvailable, !whyRequested.contains(story.id) else { return }
+        whyRequested.insert(story.id)
         let lane = activeLane
-        for story in storyDeck.prefix(3) where !whyRequested.contains(story.id) {
-            whyRequested.insert(story.id)
-            Task {
-                if let line = try? await Writer.why(title: story.post.title, snippet: story.post.snippet, lane: lane,
-                                                    site: siteContext(for: story.post)) {
-                    storyWhyLines[story.id] = line
-                }
+        Task {
+            if let line = try? await Writer.why(title: story.post.title, snippet: story.post.snippet, lane: lane,
+                                                site: siteContext(for: story.post)) {
+                storyWhyLines[story.id] = line
             }
         }
-        for candidate in deck.prefix(3) where !whyRequested.contains(candidate.authorKey) {
-            whyRequested.insert(candidate.authorKey)
-            Task {
-                if let line = try? await Writer.why(for: candidate, lane: lane, stats: authorStats[candidate.authorKey],
-                                                    hnStats: hnStats[candidate.authorKey], site: siteContext(for: candidate.bestPost)) {
-                    whyLines[candidate.authorKey] = line
-                }
+    }
+
+    /// Asks for one writer's "why" line, once.
+    func explain(_ candidate: AuthorCandidate) {
+        guard ModelAvailability.current.isAvailable, !whyRequested.contains(candidate.authorKey) else { return }
+        whyRequested.insert(candidate.authorKey)
+        let lane = activeLane
+        Task {
+            if let line = try? await Writer.why(for: candidate, lane: lane, stats: authorStats[candidate.authorKey],
+                                                hnStats: hnStats[candidate.authorKey], site: siteContext(for: candidate.bestPost)) {
+                whyLines[candidate.authorKey] = line
             }
         }
     }

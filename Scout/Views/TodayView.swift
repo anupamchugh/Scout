@@ -179,9 +179,13 @@ struct AddSiteView: View {
             Form {
                 Section {
                     TextField("swiftbysundell.com", text: $address)
+                        #if os(iOS)
                         .textInputAutocapitalization(.never)
+                        #endif
                         .autocorrectionDisabled()
+                        #if os(iOS)
                         .keyboardType(.URL)
+                        #endif
                         .onSubmit { Task { await find() } }
                         .accessibilityIdentifier("addSite.address")
                     Button(searching ? "Looking for feeds…" : "Find feeds", systemImage: "magnifyingglass") { Task { await find() } }
@@ -209,7 +213,9 @@ struct AddSiteView: View {
                 }
             }
             .navigationTitle("Add a site")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
         }
     }
@@ -274,7 +280,9 @@ struct NewLaneView: View {
                 }
             }
             .navigationTitle("New lane")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

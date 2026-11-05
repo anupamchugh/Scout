@@ -160,7 +160,9 @@ struct AskSheet: View {
                 }
             }
             .navigationTitle("Ask")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar { Button("Done") { dismiss() } }
             .task {
                 guard availability.isAvailable else { return }

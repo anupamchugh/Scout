@@ -115,7 +115,7 @@ struct ShortlistRowView: View {
 
             HStack(spacing: 10) {
                 Button(copied ? "Copied" : "Copy note", systemImage: copied ? "checkmark" : "doc.on.doc") {
-                    UIPasteboard.general.string = decision.note + "\n\n" + decision.bestPostLink
+                    Pasteboard.copy(decision.note + "\n\n" + decision.bestPostLink)
                     copied = true
                 }
                 .disabled(decision.note.isEmpty)

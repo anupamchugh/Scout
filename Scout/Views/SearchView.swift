@@ -27,7 +27,13 @@ struct SearchView: View {
     @State private var query = ""
     @State private var lastSevenDays = true
     @State private var twoPlusPosts = false
-    @State private var tag: String?
+    /// The Mac's tag catalog column filters this search through a shared binding.
+    private let tagBinding: Binding<String?>?
+    @State private var ownTag: String?
+    private var tag: String? {
+        get { tagBinding?.wrappedValue ?? ownTag }
+        nonmutating set { if let tagBinding { tagBinding.wrappedValue = newValue } else { ownTag = newValue } }
+    }
     @State private var includeBlocked = false
     @State private var minMatchingTags = 0
     @State private var minLanes = 0
@@ -38,6 +44,10 @@ struct SearchView: View {
     @State private var spotlightHits: [String] = []
     @State private var importing = false
     @State private var pitchStatus: String?
+
+    init(tag: Binding<String?>? = nil) {
+        tagBinding = tag
+    }
 
     private var filterKey: String {
         "\(query)|\(lastSevenDays)|\(twoPlusPosts)|\(tag ?? "")|\(includeBlocked)|\(minMatchingTags)|\(minLanes)|\(writer ?? "")|\(model.activeLaneName)"

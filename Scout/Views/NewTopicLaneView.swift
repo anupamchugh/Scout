@@ -61,7 +61,9 @@ struct NewTopicLaneView: View {
                 }
             }
             .navigationTitle("New topic")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

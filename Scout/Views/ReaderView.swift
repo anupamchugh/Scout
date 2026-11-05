@@ -7,11 +7,12 @@
 //  titles, links and short notes.
 //
 
+#if canImport(SafariServices) && os(iOS)
 import SafariServices
+#endif
 import ScoutKit
 import SwiftData
 import SwiftUI
-import UIKit
 
 /// Swift highlighting from ScoutKit's tokenizer, in two palettes; the font comes from SwiftUI so Dynamic Type applies.
 enum CodeHighlighter {
@@ -48,6 +49,9 @@ struct ReaderView: View {
     @Environment(ScoutModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    #if os(macOS)
+    @Environment(\.openURL) private var openURL
+    #endif
     @Query private var posts: [StoredPost]
     @State private var markdown: String?
     @State private var loading = true
@@ -88,15 +92,26 @@ struct ReaderView: View {
                 }
             }
             .background(Color.paper)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
                 if let askSubject { ToolbarItem { AskButton { asking = askSubject } } }
             }
             .sheet(item: $asking) { AskSheet(subject: $0) }
+            #if os(iOS)
             .sheet(isPresented: $showsSafari) {
                 if let url = posts.first.flatMap({ URL(string: $0.link) }) { ReaderSafari(url: url).ignoresSafeArea() }
             }
+            #else
+            .onChange(of: showsSafari) { _, shows in
+                // The Mac has no in-app Safari view: open the post in the default browser.
+                guard shows else { return }
+                showsSafari = false
+                if let url = posts.first.flatMap({ URL(string: $0.link) }) { openURL(url) }
+            }
+            #endif
             .task {
                 markdown = await model.article(for: guid)
                 loading = false
@@ -153,7 +168,7 @@ struct CodeBlockView: View {
                 MonoLabel(language.isEmpty ? "code" : language)
                 Spacer()
                 Button(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc") {
-                    UIPasteboard.general.string = code
+                    Pasteboard.copy(code)
                     copied = true
                 }
                 .font(.caption)
@@ -172,6 +187,7 @@ struct CodeBlockView: View {
     }
 }
 
+#if os(iOS)
 /// Fallback when no feed carries the full text: Safari's own Reader.
 struct ReaderSafari: UIViewControllerRepresentable {
     let url: URL
@@ -184,3 +200,4 @@ struct ReaderSafari: UIViewControllerRepresentable {
 
     func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
+#endif

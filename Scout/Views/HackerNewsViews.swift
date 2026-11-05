@@ -145,7 +145,9 @@ struct ThreadBriefView: View {
             }
             .background(Color.paper)
             .navigationTitle("Thread brief")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar { Button("Done") { dismiss() } }
             .task { await load() }
         }
