@@ -11,7 +11,7 @@ cards:
 Apple Intelligence runs on device. It writes a one-line "why this writer", the outreach notes and
 the issue intro. It never decides who ranks where.
 
-Scout grew out of MediumRSS, a 2023 tool I built to scout writers while editing Better Programming.
+Scout grew out of MediumRSS, a tool I built in 2023 while editing Better Programming to scout Medium stories and authors for outreach and newsletter marketing. Claude helped me revisit and update it with on-device AI.
 
 <p align="center"><img src="docs/media/scout-demo.gif" width="300" alt="Scout demo: Today deck, swipe, Shortlist with outreach notes, Issue drafted by agents, Search with tags, New topic"></p>
 
