@@ -220,31 +220,32 @@ final class ScoutModel {
         guard !Task.isCancelled else { return }
 
         // Taste from past swipes in this pack shifts the scores, in code. Tag weights apply at once; the deck
-        // re-sorts when similarity to liked items (image downloads for visual packs) arrives.
+        // re-sorts when similarity to liked and passed items (image downloads for visual packs) arrives.
         let record = ScoutStore.taste(for: activePack, in: context)
         let taste = record.taste
-        func fill(writerSimilarity: [String: Double], storySimilarity: [String: Double]) {
-            deck = Matching.applyTaste(Array(candidates.prefix(40)), taste: taste, similarity: writerSimilarity).prefix(30).map { candidate in
+        func fill(_ similarity: TasteSimilarity) {
+            deck = Matching.applyTaste(Array(candidates.prefix(40)), taste: taste, similarity: similarity.writers,
+                                       passSimilarity: similarity.passedWriters).prefix(30).map { candidate in
                 var candidate = candidate
                 candidate.avatarURL = avatars[candidate.authorKey]
                 return candidate
             }
-            storyDeck = Array(Matching.applyTaste(Array(stories.prefix(60)), taste: taste, similarity: storySimilarity).prefix(40))
+            storyDeck = Array(Matching.applyTaste(Array(stories.prefix(60)), taste: taste, similarity: similarity.stories,
+                                                  passSimilarity: similarity.passedStories).prefix(40))
         }
-        fill(writerSimilarity: [:], storySimilarity: [:])
+        fill(TasteSimilarity())
         await loadSiteContexts()
         guard !Task.isCancelled else { return }
         applySiteSignal(lane)
         log.info("load \(generation) filled writers=\(self.deck.count) stories=\(self.storyDeck.count) ranked=\(stories.count)")
         prefetchWhy()
 
-        let (writerSimilarity, storySimilarity) = await tasteSimilarity(writers: Array(candidates.prefix(20)),
-                                                                       stories: Array(stories.prefix(20)), record: record)
-        guard !Task.isCancelled, !(writerSimilarity.isEmpty && storySimilarity.isEmpty) else { return }
+        let similarity = await tasteSimilarity(writers: Array(candidates.prefix(20)), stories: Array(stories.prefix(20)), record: record)
+        guard !Task.isCancelled, !similarity.isEmpty else { return }
         // Keep cards already on screen in place: only cards not yet swiped are re-sorted.
         let remainingWriters = Set(deck.map(\.authorKey))
         let remainingStories = Set(storyDeck.map(\.id))
-        fill(writerSimilarity: writerSimilarity, storySimilarity: storySimilarity)
+        fill(similarity)
         deck.removeAll { !remainingWriters.contains($0.authorKey) }
         storyDeck.removeAll { !remainingStories.contains($0.id) }
     }
@@ -305,32 +306,50 @@ final class ScoutModel {
         addLane(name: name, tags: [feed.url.absoluteString], theme: "Posts from \(feed.title)")
     }
 
+    /// Similarity to liked items, and for text packs to passed items, keyed by author key and story guid.
+    struct TasteSimilarity {
+        var writers: [String: Double] = [:]
+        var stories: [String: Double] = [:]
+        var passedWriters: [String: Double] = [:]
+        var passedStories: [String: Double] = [:]
+        var isEmpty: Bool { writers.isEmpty && stories.isEmpty && passedWriters.isEmpty && passedStories.isEmpty }
+    }
+
     /// Similarity to what you liked: Vision feature prints of images for visual packs,
-    /// the text-embedding centroid of liked items for the others.
-    private func tasteSimilarity(writers: [AuthorCandidate], stories: [StoryCandidate],
-                                 record: TasteRecord) async -> ([String: Double], [String: Double]) {
+    /// the text-embedding centroids of liked and of passed items for the others.
+    private func tasteSimilarity(writers: [AuthorCandidate], stories: [StoryCandidate], record: TasteRecord) async -> TasteSimilarity {
         if activePack.isVisual {
             let liked = record.likedPrints
-            guard !liked.isEmpty else { return ([:], [:]) }
+            guard !liked.isEmpty else { return TasteSimilarity() }
             var urls: [String: URL] = [:]
             for post in stories.map(\.post) + writers.map(\.bestPost) {
                 if let image = post.imageURL.flatMap(URL.init(string:)) { urls[post.guid] = image }
             }
             let prints = await ImageTaste.prints(for: urls)
             let byGuid = prints.compactMapValues { ImageTaste.similarity($0, toLiked: liked) }
-            return (Dictionary(uniqueKeysWithValues: writers.compactMap { w in byGuid[w.bestPost.guid].map { (w.authorKey, $0) } }), byGuid)
+            return TasteSimilarity(writers: Dictionary(uniqueKeysWithValues: writers.compactMap { w in byGuid[w.bestPost.guid].map { (w.authorKey, $0) } }),
+                                   stories: byGuid)
         }
-        guard let centroid = record.taste.centroid else { return ([:], [:]) }
+        let taste = record.taste
         let writerTexts = Dictionary(uniqueKeysWithValues: writers.map { ($0.authorKey, $0.sourceText) })
         let storyTexts = Dictionary(stories.map { ($0.id, "\($0.post.title). \($0.post.snippet)") }, uniquingKeysWith: { first, _ in first })
-        return (await Embedder.similarities(writerTexts, toVector: centroid), await Embedder.similarities(storyTexts, toVector: centroid))
+        var result = TasteSimilarity()
+        if let centroid = taste.centroid {
+            result.writers = await Embedder.similarities(writerTexts, toVector: centroid)
+            result.stories = await Embedder.similarities(storyTexts, toVector: centroid)
+        }
+        if let passed = taste.passCentroid {
+            result.passedWriters = await Embedder.similarities(writerTexts, toVector: passed)
+            result.passedStories = await Embedder.similarities(storyTexts, toVector: passed)
+        }
+        return result
     }
 
-    /// One swipe updates this pack's taste: tag weights, the liked-text centroid, and for visual packs a feature print.
+    /// One swipe updates this pack's taste: tag weights, the liked- or passed-text centroid, and for visual packs a feature print.
     private func learn(tags: [String], text: String, imageURL: String?, liked: Bool) {
         let record = ScoutStore.taste(for: activePack, in: context)
         var taste = record.taste
-        taste.record(tags: tags, liked: liked, embedding: liked ? Embedder.vector(text) : nil)
+        taste.record(tags: tags, liked: liked, embedding: activePack.isVisual && !liked ? nil : Embedder.vector(text))
         record.taste = taste
         try? context.save()
         guard liked, activePack.isVisual, let url = imageURL.flatMap(URL.init(string:)) else { return }

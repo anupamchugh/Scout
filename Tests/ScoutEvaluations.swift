@@ -330,6 +330,93 @@ struct AskEvaluation: Evaluation {
     }
 }
 
+// MARK: - Editor with an editor's line
+
+/// What the issue shows after the Editor agent and the Checker. Empty strings mean the Checker rejected that part.
+struct EditorOutcome: Codable, Sendable {
+    var title = ""
+    var intro = ""
+    /// Expected only: words of which the title or intro should use at least one, so it follows the angle.
+    var angle: [String] = []
+}
+
+struct EditorCase: Sendable {
+    let line: String
+    let angle: [String]
+}
+
+struct EditorLineEvaluation: Evaluation {
+    static let issueTitle = "Coffee Bytes"
+    /// The outline `IssueAgents.edit` builds from the Curator's sections and the Blurber's lines.
+    static let outline = """
+        Swift concurrency: Actors are not locks — Actor reentrancy means state can change across an await.; \
+        Why your Task keeps running after you cancel it — Cooperative cancellation with checkCancellation.
+        On-device AI: Tool calling keeps the model honest — Give the model a tool that reads your database.; \
+        Running a small language model on iPhone — Guided generation returns typed values.
+        """
+    static let cases: [EditorCase] = [
+        EditorCase(line: "This week: agents that ship", angle: ["agent", "ship"]),
+        EditorCase(line: "Concurrency without fear", angle: ["fear", "calm", "concurren"]),
+        // A number in the line may be echoed; the Checker must still reject any other number.
+        EditorCase(line: "3 ways to stop guessing", angle: ["guess"]),
+    ]
+    static let samples: [ModelSample<EditorOutcome>] = cases.map {
+        ModelSample(prompt: $0.line, expected: EditorOutcome(angle: $0.angle))
+    }
+    let dataset = ArrayLoader(samples: Self.samples)
+
+    /// The Checker kept the drafted title.
+    let titleKept = Metric("TitleKept")
+    /// The Checker kept the drafted intro (no new numbers or links, within sixty words).
+    let introKept = Metric("IntroKept")
+    /// The kept title or intro uses the angle's words.
+    let followsAngle = Metric("FollowsAngle")
+
+    func subject(from sample: ModelSample<EditorOutcome>) async throws -> ModelSubject<EditorOutcome> {
+        let line = sample.promptDescription
+        guard let story = Self.cases.first(where: { line.contains($0.line) }) else {
+            throw SubjectInferenceError.failed(reason: "No case for \(line)")
+        }
+        return ModelSubject(value: try await Self.draft(story.line))
+    }
+
+    /// The Editor step's real prompt, then the Checker as `IssueAgents.run` applies it.
+    @MainActor static func draft(_ line: String) async throws -> EditorOutcome {
+        Writer.pack = .engineering
+        Writer.container = ScoutStore.make(inMemory: true)
+        Writer.languageModel = nil
+        let draft = try await IssueAgents.draftTop(issueTitle: issueTitle, outline: outline, editorLine: line,
+                                                   session: Writer.session(.editor))
+        let title = IssueChecker.title(draft.title, fallback: "", editorLine: line)
+        let intro = IssueChecker.intro(draft.intro, editorLine: line)
+        return EditorOutcome(title: title.text, intro: intro.text)
+    }
+
+    var evaluators: Evaluators {
+        Evaluator { _, subject in
+            subject.value.title.isEmpty ? titleKept.failing(rationale: "Checker kept the old title") : titleKept.passing()
+        }
+        Evaluator { _, subject in
+            subject.value.intro.isEmpty ? introKept.failing(rationale: "Checker blanked the intro") : introKept.passing()
+        }
+        Evaluator { sample, subject in
+            let text = (subject.value.title + " " + subject.value.intro).lowercased()
+            guard let words = sample.expected?.angle, !text.trimmingCharacters(in: .whitespaces).isEmpty else {
+                return followsAngle.ignore()
+            }
+            return words.contains { text.contains($0) } ? followsAngle.passing() : followsAngle.failing(rationale: text)
+        }
+    }
+
+    func aggregateMetrics(using aggregator: inout MetricsAggregator) {
+        aggregator.group("Editor") { group in
+            group.computeMean(of: titleKept)
+            group.computeMean(of: introKept)
+            group.computeMean(of: followsAngle)
+        }
+    }
+}
+
 // MARK: - Runs
 
 /// Runs only where Apple Intelligence is on. The Report navigator › Evaluations shows every row after a run.
@@ -338,6 +425,7 @@ struct AskEvaluation: Evaluation {
 @Suite(.serialized) struct ScoutEvaluationTests {
     static let why = WhyLineEvaluation()
     static let ask = AskEvaluation()
+    static let editor = EditorLineEvaluation()
 
     @Test(.enabled(if: SystemLanguageModel.default.isAvailable, "Needs Apple Intelligence"), .evaluates(Self.why))
     func whyLinesAreKeptAndOnTopic() async throws {
@@ -376,5 +464,23 @@ struct AskEvaluation: Evaluation {
         #expect(result.aggregateValue(.mean(of: Self.ask.coversTheAsk)) >= 0.7)
         #expect(result.aggregateValue(.mean(of: Self.ask.admitsMissing)) >= 0.75, "unanswerable questions should not be guessed")
         #expect(result.aggregateValue(.mean(of: Self.ask.toolsAllPass)) >= 0.5)
+    }
+
+    @Test(.enabled(if: SystemLanguageModel.default.isAvailable, "Needs Apple Intelligence"), .evaluates(Self.editor))
+    func editorFollowsTheEditorsLineAndPassesTheChecker() async throws {
+        defer { Writer.container = nil }
+        let result = EvaluationContext.current.result
+        print("EVAL: Editor\n\(result.groupedSummary)")
+        let inputs = result.detailed[Self.editor.inputColumn]
+        let outputs = result.detailed[Self.editor.responseColumn]
+        for metric in [Self.editor.titleKept, Self.editor.introKept, Self.editor.followsAngle] {
+            let column = result.detailed[metric: metric]
+            for row in 0..<column.count where column[row]?.value == .failing {
+                let value = outputs[row]?.value
+                print("EVAL editor \(metric.name): \(inputs[row]?.promptDescription ?? "?") → \(value?.title ?? "?") / \(value?.intro ?? "?") [\(column[row]?.rationale ?? "")]")
+            }
+        }
+        #expect(result.aggregateValue(.mean(of: Self.editor.introKept)) >= 0.6, "most intros should pass the Checker")
+        #expect(result.aggregateValue(.mean(of: Self.editor.followsAngle)) >= 0.6, "the draft should follow the editor's line")
     }
 }

@@ -17,6 +17,11 @@ struct IssueEditorView: View {
 
     private var content: IssueContent { issue.content }
 
+    /// Empty text clears the line, so "no line" stays nil and the Editor runs as before.
+    private var editorLine: Binding<String> {
+        Binding(get: { issue.editorLine ?? "" }, set: { issue.editorLine = $0.isEmpty ? nil : $0 })
+    }
+
     /// Entries grouped by the Curator's sections, in order; one group before the agents run.
     private var groups: [(name: String, entries: [IssueEntry])] {
         var order: [String] = []
@@ -38,6 +43,13 @@ struct IssueEditorView: View {
                 TextField("Issue title", text: $issue.title).font(.title3.weight(.semibold))
                 Stepper("Issue \(issue.number)", value: $issue.number, in: 1...999)
             } header: { MonoLabel("Issue · Editor's title") }
+
+            Section {
+                TextField("Editor's line, e.g. This week: agents that ship", text: editorLine)
+                    .accessibilityIdentifier("issue.editorLine")
+            } header: { MonoLabel("Angle · Editor's line") } footer: {
+                Text("Optional. The Editor agent follows its angle for the title and intro; facts still come from your stories.")
+            }
 
             Section {
                 TextField("A short intro for readers", text: $issue.intro, axis: .vertical).lineLimit(2...8)
