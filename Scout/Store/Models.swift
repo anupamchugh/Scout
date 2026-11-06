@@ -195,6 +195,9 @@ final class IssueDraft {
     var spotlightQuestions: [String] = []
     /// What the Checker replaced or dropped in the title, intro and Spotlight.
     var agentFlags: [String] = []
+    /// The editor's one-line angle for the issue ("This week: agents that ship"). It steers the Editor agent's
+    /// title and intro; it is never exported. Optional with a nil default, so existing stores migrate as is.
+    var editorLine: String? = nil
 
     init(number: Int, title: String, intro: String = "", created: Date = .now) {
         self.number = number

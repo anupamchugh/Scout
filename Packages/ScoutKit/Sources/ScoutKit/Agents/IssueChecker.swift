@@ -140,17 +140,29 @@ public enum IssueChecker {
         return (text, nil)
     }
 
-    public static func intro(_ text: String?) -> (text: String, flag: String?) {
+    /// `editorLine` is the editor's own angle for the issue: it may appear verbatim, numbers and all,
+    /// but any other number or link in the intro still fails.
+    public static func intro(_ text: String?, editorLine: String? = nil) -> (text: String, flag: String?) {
         guard let text = text?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return ("", nil) }
-        if !TextGuard.isClean(text) { return ("", "The drafted intro had numbers or links, so it was left blank.") }
+        if !isClean(text, allowing: editorLine) { return ("", "The drafted intro had numbers or links, so it was left blank.") }
         if words(text) > maxIntroWords { return ("", "The drafted intro was over \(maxIntroWords) words, so it was left blank.") }
         return (text, nil)
     }
 
-    public static func title(_ text: String?, fallback: String) -> (text: String, flag: String?) {
+    public static func title(_ text: String?, fallback: String, editorLine: String? = nil) -> (text: String, flag: String?) {
         guard let text = text?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return (fallback, nil) }
-        if !TextGuard.isClean(text) || text.count > 70 { return (fallback, "The drafted title didn't pass the checks; kept the old one.") }
+        if !isClean(text, allowing: editorLine) || text.count > 70 {
+            return (fallback, "The drafted title didn't pass the checks; kept the old one.")
+        }
         return (text, nil)
+    }
+
+    /// No digits or links outside verbatim copies (ignoring case) of `line`. A link anywhere fails unless the line has one.
+    static func isClean(_ text: String, allowing line: String?) -> Bool {
+        guard let line = line?.trimmingCharacters(in: .whitespacesAndNewlines), !line.isEmpty else { return TextGuard.isClean(text) }
+        let rest = text.replacingOccurrences(of: line, with: " ", options: .caseInsensitive)
+        if TextGuard.hasLink(text) && !TextGuard.hasLink(line) { return false }
+        return !TextGuard.hasDigits(rest) && !TextGuard.hasLink(rest)
     }
 
     /// Keeps only questions that cite one of the writer's real post titles (or three words of one), and a clean intro.

@@ -46,6 +46,29 @@ struct AgentCheckTests {
         #expect(IssueChecker.title("Calm concurrency", fallback: "Coffee Bytes").text == "Calm concurrency")
     }
 
+    @Test func editorLineMayAppearVerbatimButNothingElseNew() {
+        let line = "This week: 3 agents that ship"
+        // The line itself, numbers included, may be copied (ignoring case).
+        #expect(IssueChecker.title("This week: 3 agents that ship", fallback: "Coffee Bytes", editorLine: line).flag == nil)
+        #expect(IssueChecker.intro("this week: 3 agents that ship, from actors to evaluating prompts.", editorLine: line).flag == nil)
+        // Numbers and links the line doesn't have still fail.
+        #expect(IssueChecker.title("This week: 3 agents that ship in 2027", fallback: "Coffee Bytes", editorLine: line).text == "Coffee Bytes")
+        #expect(IssueChecker.intro("Agents that ship, 5 of them.", editorLine: line).text == "")
+        #expect(IssueChecker.intro("Agents that ship. Read more at agents.dev", editorLine: line).text == "")
+        #expect(IssueChecker.intro("Agents that ship, see agents.dev", editorLine: "agents").text == "")
+        // A digit borrowed from the line but not the line itself fails.
+        #expect(IssueChecker.title("Top 3 picks", fallback: "Coffee Bytes", editorLine: line).text == "Coffee Bytes")
+    }
+
+    @Test func noEditorLineKeepsTodaysChecks() {
+        for line in [nil, "", "   "] {
+            #expect(IssueChecker.title("Issue 12: Actors", fallback: "Coffee Bytes", editorLine: line).text == "Coffee Bytes")
+            #expect(IssueChecker.title("Calm concurrency", fallback: "Coffee Bytes", editorLine: line).text == "Calm concurrency")
+            #expect(IssueChecker.intro("Read https://x.dev now.", editorLine: line).text == "")
+            #expect(IssueChecker.intro("Actors and task groups this week.", editorLine: line).flag == nil)
+        }
+    }
+
     @Test func spotlightQuestionsMustCiteARealPost() {
         let digest = AuthorDigest(authorKey: "a", name: "Writer A", handle: "a",
                                   posts: [.init(title: "Actors without the fear", snippet: ""), .init(title: "Sendable in practice", snippet: "")])

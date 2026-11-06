@@ -3,7 +3,8 @@
 //  ScoutKit
 //
 //  Learning from swipes happens here, in code: tag weights move up on right swipes and down on
-//  left swipes, every weight decays a little each swipe, and nothing leaves -1...1. The model plays no part.
+//  left swipes, every weight decays a little each swipe, and nothing leaves -1...1. Cards that read like
+//  liked items rise a little; cards that read like passed items sink a little. The model plays no part.
 //
 
 import Accelerate
@@ -19,10 +20,14 @@ public struct Taste: Codable, Sendable, Equatable {
     /// How far taste can move a 0...100 match score in either direction.
     public static let maxTagShift = 12.0
     public static let maxSimilarityShift = 10.0
+    /// How far looking like passed items can pull a score down; nothing is pushed up by it.
+    public static let maxPassShift = 8.0
 
     public var tagWeights: [String: Double] = [:]
     /// Running mean of the text embeddings of liked items.
     public var centroid: [Double]?
+    /// Running mean of the text embeddings of passed items. Optional, so taste saved before it existed still decodes.
+    public var passCentroid: [Double]?
     public var likes = 0
     public var passes = 0
 
@@ -46,6 +51,14 @@ public struct Taste: Codable, Sendable, Equatable {
             }
         } else {
             passes += 1
+            if let embedding {
+                if let current = passCentroid, current.count == embedding.count {
+                    let n = Double(passes)
+                    passCentroid = zip(current, embedding).map { $0 + ($1 - $0) / n }
+                } else {
+                    passCentroid = embedding
+                }
+            }
         }
     }
 
@@ -55,27 +68,33 @@ public struct Taste: Codable, Sendable, Equatable {
         return known.isEmpty ? 0 : known.reduce(0, +) / Double(known.count)
     }
 
-    /// The deterministic blend: the lane score, shifted by tag affinity and by similarity to liked items.
-    public func adjusted(_ score: Int, tags: [String], similarity: Double? = nil) -> Int {
+    /// The deterministic blend: the lane score, shifted by tag affinity and by similarity to liked items,
+    /// and lowered (only above the 0.5 midpoint) by similarity to passed items.
+    public func adjusted(_ score: Int, tags: [String], similarity: Double? = nil, passSimilarity: Double? = nil) -> Int {
         var value = Double(score) + Self.maxTagShift * affinity(for: tags)
         if let similarity { value += Self.maxSimilarityShift * (min(1, max(0, similarity)) - 0.5) * 2 }
+        if let passSimilarity { value -= Self.maxPassShift * max(0, min(1, passSimilarity) - 0.5) * 2 }
         return Int(max(0, min(100, value.rounded())))
     }
 }
 
 extension Matching {
     /// Re-orders writers by the taste-adjusted score (ties keep the lane order).
-    public static func applyTaste(_ candidates: [AuthorCandidate], taste: Taste, similarity: [String: Double] = [:]) -> [AuthorCandidate] {
+    public static func applyTaste(_ candidates: [AuthorCandidate], taste: Taste, similarity: [String: Double] = [:],
+                                  passSimilarity: [String: Double] = [:]) -> [AuthorCandidate] {
         candidates.enumerated().map { index, candidate in
-            (index, candidate.withScore(taste.adjusted(candidate.score, tags: candidate.topics, similarity: similarity[candidate.authorKey])))
+            (index, candidate.withScore(taste.adjusted(candidate.score, tags: candidate.topics, similarity: similarity[candidate.authorKey],
+                                                       passSimilarity: passSimilarity[candidate.authorKey])))
         }
         .sorted { $0.1.score != $1.1.score ? $0.1.score > $1.1.score : $0.0 < $1.0 }
         .map(\.1)
     }
 
-    public static func applyTaste(_ stories: [StoryCandidate], taste: Taste, similarity: [String: Double] = [:]) -> [StoryCandidate] {
+    public static func applyTaste(_ stories: [StoryCandidate], taste: Taste, similarity: [String: Double] = [:],
+                                  passSimilarity: [String: Double] = [:]) -> [StoryCandidate] {
         stories.enumerated().map { index, story in
-            (index, story.withScore(taste.adjusted(story.score, tags: story.post.categories, similarity: similarity[story.id])))
+            (index, story.withScore(taste.adjusted(story.score, tags: story.post.categories, similarity: similarity[story.id],
+                                                   passSimilarity: passSimilarity[story.id])))
         }
         .sorted { $0.1.score != $1.1.score ? $0.1.score > $1.1.score : $0.0 < $1.0 }
         .map(\.1)

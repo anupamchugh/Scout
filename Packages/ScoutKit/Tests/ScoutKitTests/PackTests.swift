@@ -72,6 +72,51 @@ struct TasteTests {
         #expect(Matching.applyTaste(deck, taste: taste).map(\.id) == ["swift", "other", "crypto"])
     }
 
+    @Test func passCentroidIsTheMeanOfPassedEmbeddings() {
+        var taste = Taste()
+        taste.record(tags: [], liked: false, embedding: [1, 0])
+        taste.record(tags: [], liked: false, embedding: [0, 1])
+        taste.record(tags: [], liked: true, embedding: [9, 9])
+        #expect(taste.passCentroid == [0.5, 0.5])
+        #expect(taste.centroid == [9, 9])
+    }
+
+    @Test func lookingLikePassedItemsOnlyLowersAndIsBounded() {
+        let taste = Taste()
+        #expect(taste.adjusted(50, tags: [], passSimilarity: 1) == 50 - Int(Taste.maxPassShift))
+        #expect(taste.adjusted(50, tags: [], passSimilarity: 0.75) == 50 - Int(Taste.maxPassShift / 2))
+        // At or below the midpoint, and out of range low, there's no effect; above 1 is clamped.
+        #expect(taste.adjusted(50, tags: [], passSimilarity: 0.5) == 50)
+        #expect(taste.adjusted(50, tags: [], passSimilarity: -3) == 50)
+        #expect(taste.adjusted(50, tags: [], passSimilarity: 7) == 50 - Int(Taste.maxPassShift))
+        #expect(taste.adjusted(3, tags: [], passSimilarity: 1) == 0)
+    }
+
+    @Test func passedAndLikedLookalikesReorderTheDeck() {
+        func story(_ id: String, score: Int) -> StoryCandidate {
+            StoryCandidate(post: PostRecord(guid: id, title: id, link: id, snippet: "", authorKey: id, authorName: id,
+                                            handle: nil, categories: [], foundUnder: [], published: now, readingMinutes: nil),
+                           lanesSurfacing: 1, overlapCount: 0, semantic: 0, score: score)
+        }
+        let deck = [story("likePassed", score: 60), story("neutral", score: 56), story("likeKept", score: 54)]
+        let taste = Taste()
+        #expect(Matching.applyTaste(deck, taste: taste).map(\.id) == ["likePassed", "neutral", "likeKept"])
+        let reordered = Matching.applyTaste(deck, taste: taste, similarity: ["likeKept": 0.9, "neutral": 0.5, "likePassed": 0.5],
+                                            passSimilarity: ["likePassed": 0.95, "neutral": 0.4, "likeKept": 0.3])
+        #expect(reordered.map(\.id) == ["likeKept", "neutral", "likePassed"])
+        #expect(reordered.map(\.score) == [62, 56, 53])
+        // Same inputs, same order.
+        #expect(Matching.applyTaste(deck, taste: taste, similarity: ["likeKept": 0.9], passSimilarity: ["likePassed": 0.95]).map(\.id)
+                == Matching.applyTaste(deck, taste: taste, similarity: ["likeKept": 0.9], passSimilarity: ["likePassed": 0.95]).map(\.id))
+    }
+
+    @Test func tasteSavedBeforePassCentroidStillDecodes() throws {
+        let old = #"{"tagWeights":{"swift":0.5},"centroid":[1,0],"likes":2,"passes":1}"#
+        let taste = try JSONDecoder().decode(Taste.self, from: Data(old.utf8))
+        #expect(taste.passCentroid == nil)
+        #expect(taste.tagWeights["swift"] == 0.5)
+    }
+
     @Test func imageDistanceMapsToSimilarity() {
         #expect(ImageTaste.similarity(distance: 0) == 1)
         #expect(ImageTaste.similarity(distance: 1.5) == 0)

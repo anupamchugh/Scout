@@ -124,8 +124,8 @@ final class IssueAgents {
                 position += 1
             }
         }
-        let title = IssueChecker.title(top?.title, fallback: issue.title)
-        let intro = IssueChecker.intro(top?.intro)
+        let title = IssueChecker.title(top?.title, fallback: issue.title, editorLine: issue.editorLine)
+        let intro = IssueChecker.intro(top?.intro, editorLine: issue.editorLine)
         issue.title = title.text
         if !intro.text.isEmpty { issue.intro = intro.text }
         flags += [title.flag, intro.flag].compactMap { $0 }
@@ -153,7 +153,7 @@ final class IssueAgents {
         let started = Date.now
         let draft = try? await editorSession.respond(to: "\(instruction). Keep the same sections.", generating: IssueTopDraft.self,
                                                      options: ScoutMode.editor.options).content
-        let intro = IssueChecker.intro(draft?.intro)
+        let intro = IssueChecker.intro(draft?.intro, editorLine: issue.editorLine)
         record("editor", input: instruction, output: draft.map { "\($0.title)\n\($0.intro)" } ?? "", rejection: intro.flag,
                started: started, subject: "issue", context: context)
         if !intro.text.isEmpty { issue.intro = intro.text }
@@ -272,18 +272,30 @@ final class IssueAgents {
         let session = Writer.session(.editor)
         editorSession = session
         let started = Date.now
+        let input = [issue.title, issue.editorLine].compactMap { $0 }.joined(separator: " · ")
         do {
-            let draft = try await session.respond(generating: IssueTopDraft.self, options: ScoutMode.editor.options) {
-                "Title and introduce this issue of \(issue.title)."
-                "<feed>\(outline)</feed>"
-            }.content
-            record("editor", input: issue.title, output: "\(draft.title)\n\(draft.intro)", rejection: IssueChecker.intro(draft.intro).flag,
+            let draft = try await Self.draftTop(issueTitle: issue.title, outline: outline, editorLine: issue.editorLine, session: session)
+            record("editor", input: input, output: "\(draft.title)\n\(draft.intro)",
+                   rejection: IssueChecker.intro(draft.intro, editorLine: issue.editorLine).flag,
                    started: started, subject: "issue", context: context)
             return draft
         } catch {
-            record("editor", input: issue.title, output: "", rejection: "error: \(error)", started: started, subject: "issue", context: context)
+            record("editor", input: input, output: "", rejection: "error: \(error)", started: started, subject: "issue", context: context)
             return nil
         }
+    }
+
+    /// The Editor's prompt. The editor's line sets the angle and tone only; facts still come from the feed outline.
+    static func draftTop(issueTitle: String, outline: String, editorLine: String?,
+                         session: LanguageModelSession) async throws -> IssueTopDraft {
+        let line = editorLine?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return try await session.respond(generating: IssueTopDraft.self, options: ScoutMode.editor.options) {
+            "Title and introduce this issue of \(issueTitle)."
+            if !line.isEmpty {
+                "The editor's angle for this issue: \"\(line)\". Follow its angle and tone; you may use its words. Take every fact from the feed below, not from the angle."
+            }
+            "<feed>\(outline)</feed>"
+        }.content
     }
 
     private func record(_ role: String, input: String, output: String, rejection: String?, started: Date, subject: String,
