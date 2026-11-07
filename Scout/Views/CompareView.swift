@@ -58,6 +58,7 @@ final class CompareRun {
 
 struct CompareView: View {
     @State private var compare = CompareRun()
+    @State private var navigator = Navigator.shared
 
     var body: some View {
         NavigationStack {
@@ -92,6 +93,14 @@ struct CompareView: View {
             }
             .background(Color.paper)
             .navigationTitle("Compare")
+            .task(id: navigator.pendingCompare.map { "\($0.first.key)|\($0.second.key)" }) {
+                if let request = navigator.pendingCompare {
+                    navigator.pendingCompare = nil
+                    compare.a = request.first
+                    compare.b = request.second
+                    await compare.run()
+                }
+            }
             .task {
                 #if DEBUG
                 let args = ProcessInfo.processInfo.arguments

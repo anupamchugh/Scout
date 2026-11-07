@@ -5,6 +5,7 @@
 
 import Foundation
 import Observation
+import ScoutKit
 
 enum ScoutTab: String, Hashable {
     case today, shortlist, compare, search
@@ -22,4 +23,21 @@ final class Navigator {
         #endif
         return .today
     }()
+
+    /// A search Siri handed over (searchInApp): SearchView picks it up and clears it.
+    var pendingSearch: String?
+    /// Two publications Siri asked about: CompareView picks them up, runs and clears it.
+    var pendingCompare: (first: PublicationChoice, second: PublicationChoice)?
+
+    /// Where a Siri search lands: Compare for publication questions, Search for everything else.
+    func open(_ route: SearchRoute) {
+        switch route {
+        case .compare(let first, let second):
+            pendingCompare = (first, second)
+            tab = .compare
+        case .search(let term):
+            pendingSearch = term
+            tab = .search
+        }
+    }
 }

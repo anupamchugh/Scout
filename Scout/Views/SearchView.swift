@@ -25,6 +25,7 @@ struct SearchView: View {
     @Query private var blocked: [BlockedAuthor]
 
     @State private var query = ""
+    @State private var navigator = Navigator.shared
     @State private var lastSevenDays = true
     @State private var twoPlusPosts = false
     /// The Mac's tag catalog column filters this search through a shared binding.
@@ -114,6 +115,12 @@ struct SearchView: View {
             .background(Color.paper)
             .navigationTitle("Search")
             .searchable(text: $query, prompt: "Ask in your own words")
+            .task(id: navigator.pendingSearch) {
+                if let term = navigator.pendingSearch {
+                    navigator.pendingSearch = nil
+                    query = term
+                }
+            }
             .task(id: filterKey) { await search() }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.pdf, .image]) { result in
                 if case .success(let url) = result { Task { await importPitch(url) } }

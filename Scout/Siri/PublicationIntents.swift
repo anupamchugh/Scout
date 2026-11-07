@@ -81,3 +81,16 @@ struct CheckPublicationSlopIntent: AppIntent {
         PublicationBriefing.slopReport(try await PublicationComparison.side(publication.choice))
     }
 }
+
+/// Siri's system search ("search Scout for…", and requests Siri reads as a search, such as "check programming
+/// publications in Scout"). Publication questions open Compare and run it; anything else opens Search.
+@AppIntent(schema: .system.searchInApp)
+struct SearchScoutIntent {
+    var criteria: StringSearchCriteria
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        Navigator.shared.open(SearchRoute.route(criteria.term))
+        return .result()
+    }
+}
