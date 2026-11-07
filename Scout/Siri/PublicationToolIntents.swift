@@ -18,7 +18,7 @@ import ScoutKit
 struct ScanProgrammingPublicationsTool: AppIntent {
     static let title: LocalizedStringResource = "Scan Programming Publications"
     static let description = IntentDescription(LocalizedStringResource(
-        "Scans the latest feed posts of Level Up Coding, Better Programming, ITNEXT, JavaScript in Plain English and Stackademic, and reports formula titles, one-writer queues, stock phrases and archived publications. Counts are computed by the app; it does not judge article quality."))
+        "Scans the latest feed posts of Level Up Coding, Better Programming, ITNEXT, JavaScript in Plain English, Stackademic and Data Science Collective, and reports formula titles, one-writer queues, stock phrases and archived publications. Counts are computed by the app; it does not judge article quality."))
     static var supportedModes: IntentModes { .background }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {

@@ -63,4 +63,12 @@ struct PublicationBriefingTests {
         #expect(PublicationBriefing.slopReport(side, now: now)
                 == "Paywalled. None of its 1 latest posts had full text in the feed, so none were judged.")
     }
+
+    @Test func slopReportSaysWhenTheModelFailed() {
+        let failed = CritiqueVerdict(status: .failed, critique: nil, problems: ["Model assets unavailable"])
+        let side = PublicationComparison.summarize(PublicationChoice(name: "ITNEXT", key: "itnext"),
+                                                   stories: [story("x", "Dee", "Kubernetes operators", failed)])
+        #expect(PublicationBriefing.slopReport(side, now: now)
+                == "ITNEXT. The on-device model couldn’t read 1 of its 1 latest posts (Model assets unavailable), so none were judged.")
+    }
 }

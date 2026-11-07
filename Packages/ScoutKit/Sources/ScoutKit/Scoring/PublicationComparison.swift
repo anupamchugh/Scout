@@ -48,6 +48,7 @@ public struct PublicationChoice: Sendable, Hashable, Identifiable, Codable {
         PublicationChoice(name: "ITNEXT", key: "itnext"),
         PublicationChoice(name: "JavaScript in Plain English", key: "javascript-in-plain-english"),
         PublicationChoice(name: "Stackademic", key: "stackademic"),
+        PublicationChoice(name: "Data Science Collective", key: "data-science-collective"),
     ]
 }
 

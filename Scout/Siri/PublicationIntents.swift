@@ -18,6 +18,7 @@ enum ProgrammingPublication: String, AppEnum, CaseIterable {
     case itnext = "itnext"
     case javaScriptInPlainEnglish = "javascript-in-plain-english"
     case stackademic = "stackademic"
+    case dataScienceCollective = "data-science-collective"
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Publication"
     static let caseDisplayRepresentations: [ProgrammingPublication: DisplayRepresentation] = [
@@ -26,6 +27,7 @@ enum ProgrammingPublication: String, AppEnum, CaseIterable {
         .itnext: "ITNEXT",
         .javaScriptInPlainEnglish: "JavaScript in Plain English",
         .stackademic: "Stackademic",
+        .dataScienceCollective: "Data Science Collective",
     ]
 
     var choice: PublicationChoice {
@@ -36,7 +38,7 @@ enum ProgrammingPublication: String, AppEnum, CaseIterable {
 struct CheckPublicationsIntent: AppIntent {
     static let title: LocalizedStringResource = "Check Programming Publications"
     static let description = IntentDescription(
-        "Scan the latest posts of Level Up Coding, Better Programming, ITNEXT, JavaScript in Plain English and Stackademic for formula titles, one-writer queues and stock phrases.")
+        "Scan the latest posts of Level Up Coding, Better Programming, ITNEXT, JavaScript in Plain English, Stackademic and Data Science Collective for formula titles, one-writer queues and stock phrases.")
     static var supportedModes: IntentModes { .background }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {

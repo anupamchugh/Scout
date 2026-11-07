@@ -20,6 +20,7 @@ public enum SearchRoute: Equatable, Sendable {
         ("itnext", "itnext"), ("it next", "itnext"),
         ("javascript in plain english", "javascript-in-plain-english"), ("plain english", "javascript-in-plain-english"),
         ("stackademic", "stackademic"),
+        ("data science collective", "data-science-collective"),
     ]
 
     static let publicationWords = ["publication", "slop", "compare", "versus", " vs "]

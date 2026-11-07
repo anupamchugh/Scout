@@ -63,6 +63,10 @@ public enum PublicationBriefing {
         var text = "\(side.choice.name)"
         text += isArchived(side, now: now) ? ", archived since \(day(side.lastPost)). " : ". "
         guard judged > 0 else {
+            let failed = side.stories.filter { $0.verdict.status == .failed }
+            if let first = failed.first {
+                return text + "The on-device model couldn’t read \(failed.count) of its \(side.stories.count) latest posts (\(first.verdict.problems.first ?? "no reason given")), so none were judged."
+            }
             return text + "None of its \(side.stories.count) latest posts had full text in the feed, so none were judged."
         }
         text += "I read \(judged) of its \(side.stories.count) latest posts on this device"

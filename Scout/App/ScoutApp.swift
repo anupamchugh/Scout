@@ -58,6 +58,14 @@ struct RootTabs: View {
         let text: String
         if request == "publications" {
             text = await CheckPublicationsIntent.briefing()
+        } else if request == "digest" {
+            // Every preset publication read on this device, one after another, as the Markdown digest.
+            var sides: [PublicationSide] = []
+            for choice in PublicationChoice.presets {
+                if let side = try? await PublicationComparison.side(choice) { sides.append(side) }
+                print("SIRI-DIALOG[digest]: read \(choice.name)")
+            }
+            text = PublicationDigest.markdown(sides, generated: .now, where: "in the Scout app on an iOS simulator")
         } else if request.hasPrefix("slop:"), let publication = ProgrammingPublication(rawValue: String(request.dropFirst(5))) {
             text = (try? await CheckPublicationSlopIntent.report(publication)) ?? "failed"
         } else {
