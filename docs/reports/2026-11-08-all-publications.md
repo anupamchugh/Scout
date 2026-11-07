@@ -13,6 +13,7 @@ Generated 8 Nov 2026 on this Mac with ScoutKit's `PublicationComparison`, the en
 | ITNEXT | 10 (4 Nov 2026 – 6 Nov 2026) | 9 | 5 | 2.75 | 60% | 100% | 30% | 0% | 20% | 0.01 | 1.13 | 51 | 12 |
 | JavaScript in Plain English | 10 (7 Nov 2026) | 9 | 1 | 2.75 | 0% | 0% | 0% | 0% | 20% | 0.00 | 1.62 | 57 | 11 |
 | Stackademic | 10 (6 Nov 2026 – 7 Nov 2026) | 10 | 1 | 2.75 | 0% | 100% | 10% | 0% | 10% | 0.00 | 0.00 | 39 | 12 |
+| Data Science Collective | 10 (3 Nov 2026 – 6 Nov 2026) | 9 | 3 | 2.92 | 67% | 100% | 10% | 0% | 20% | 0.12 | 1.23 | 57 | 11 |
 
 Flesch reading ease: higher reads easier; 60–70 is plain English, 30–50 is typical technical writing.
 
@@ -27,6 +28,7 @@ Packaging × substance, decided in code. **Formula** = listicle, how-to or colon
 | ITNEXT | 2 | 2 | 0 | 1 | 5 |
 | JavaScript in Plain English | 1 | 0 | 0 | 0 | 9 |
 | Stackademic | 1 | 0 | 0 | 0 | 9 |
+| Data Science Collective | 2 | 1 | 0 | 0 | 7 |
 
 ### Level Up Coding
 
@@ -74,6 +76,16 @@ Flagged by the checker (not scored): How to embed an npm downloads badge on your
 | Plain and solid | 2.75 | Renaldi Purwanto | [RAG in Go With PostgreSQL and pgvector](https://blog.stackademic.com/rag-in-go-with-postgresql-and-pgvector-ef36135f2a7e) | “Our internal documentation explained what should happen when transactions timed out, refunds were requested, or providers sent duplicate callbacks.” | The article details a unique Go-PostgreSQL-pgvector pipeline with code-first embedding and retrieval logic. |
 
 Flagged by the checker (not scored): How Packet Sniffing Works — evidence quote not found in the article; generic sentence not found in the article.
+
+### Data Science Collective
+
+| Bucket | Score | Writer | Story | Most generic sentence (reader's pick, checked) | Reader's reason |
+|---|---|---|---|---|---|
+| Plain and solid | 3.00 | Paolo Perrone | [What is Agentic Search?](https://medium.com/data-science-collective/what-is-agentic-search-f6aa38d97c0b) | “Agentic search is a model searching in a loop: it writes a query, reads the results and picks its next move, whether that is another search, a page to open or the answer.” | The article builds a detailed loop with code, token counts, and benchmark data to illustrate cost and performance trade-offs. |
+| Plain and solid | 3.00 | Benjamin Etienne | [Building an offline & private Personal Markdown Search Engine](https://medium.com/data-science-collective/building-an-offline-private-personal-markdown-search-engine-2e7e6f600989) | “PMS is a lightweight, local-first hybrid search engine and web clipper for personal Markdown knowledge bases, built in Python on top of SQLite (FTS5 + sqlite-vec) and ONNX (fastembed).” | The article details a unique technical stack and custom chunking logic not commonly found in similar tools. |
+| Formula, solid (good slop) | 2.75 | Ananya B | [Survival Analysis in Python: What Your Churn Model Isn't Telling You](https://medium.com/data-science-collective/survival-analysis-in-python-what-your-churn-model-isnt-telling-you-2d920fa0bf1a) | “In the age of AI, we have increasingly sophisticated predictive analytics algorithms.” | The article uses a unique Python-based example with lifelines to illustrate survival analysis concepts beyond standard explanations. |
+
+Flagged by the checker (not scored): Why DART wins your Optuna slice plot and loses the benchmark — evidence quote not found in the article.
 
 ## Method and limits
 

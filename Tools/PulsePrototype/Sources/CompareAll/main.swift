@@ -1,6 +1,6 @@
 //  CompareAll — every preset publication, read on device with the Compare tab's engine.
 //
-//  swift run CompareAll <report.md>
+//  swift run CompareAll <report.md> [digest.md]
 //
 //  Numbers, buckets and readability are computed in code (ScoutKit). The only model text in the report is
 //  each story's quoted sentences and one-line reason, from the @Generable StoryCritique rubric.
@@ -101,3 +101,9 @@ md.append("- “Slop” here names packaging and genericity patterns only. Wheth
 
 try md.joined(separator: "\n").write(to: URL(fileURLWithPath: CommandLine.arguments[1]), atomically: true, encoding: .utf8)
 print("REPORT \(CommandLine.arguments[1])")
+// Optional second path: the titles, writers and cadence digest from the same reads.
+if CommandLine.arguments.count >= 3 {
+    try PublicationDigest.markdown(sides, generated: .now, where: "on this Mac")
+        .write(to: URL(fileURLWithPath: CommandLine.arguments[2]), atomically: true, encoding: .utf8)
+    print("DIGEST \(CommandLine.arguments[2])")
+}
