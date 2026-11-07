@@ -62,11 +62,22 @@ public struct ComparedStory: Sendable, Identifiable, Equatable {
     public var shape: TitleShape
     public var verdict: CritiqueVerdict
     public var signals: GenericWritingSignals?
+    /// The publication's tags for the post, as the feed lists them.
+    public var tags: [String]
+    /// The first subheading of the article, which Medium shows as the subtitle; nil for previews or none.
+    public var subtitle: String?
+    /// Code's audit of the title, tags and subtitle.
+    public var metadata: MetadataAudit
+    /// Which tags the article supports, when the tag check ran.
+    public var tagFit: TagFitVerdict?
 
     public init(id: String, title: String, writer: String, link: String, published: Date, shape: TitleShape,
-                verdict: CritiqueVerdict, signals: GenericWritingSignals?) {
+                verdict: CritiqueVerdict, signals: GenericWritingSignals?, tags: [String] = [], subtitle: String? = nil,
+                articleText: String? = nil, tagFit: TagFitVerdict? = nil) {
         self.id = id; self.title = title; self.writer = writer; self.link = link; self.published = published
         self.shape = shape; self.verdict = verdict; self.signals = signals
+        self.tags = tags; self.subtitle = subtitle; self.tagFit = tagFit
+        self.metadata = MetadataAudit.audit(title: title, tags: tags, subtitle: subtitle, articleText: articleText)
     }
 }
 
@@ -139,6 +150,7 @@ public enum PublicationComparison {
     public static func read(
         _ items: [FeedItem],
         critic: @Sendable (String, String?) async -> CritiqueVerdict = { await StoryCritic.critique(title: $0, markdown: $1) },
+        tagChecker: (@Sendable (String, [String], String) async -> TagFitVerdict)? = nil,
         progress: @Sendable (Int, Int) async -> Void = { _, _ in }
     ) async -> [ComparedStory] {
         var out: [ComparedStory] = []
@@ -148,10 +160,16 @@ public enum PublicationComparison {
             let markdown = item.contentHTML.map { HTMLToMarkdown.convert($0) }
             let readable = markdown.flatMap { HTMLToMarkdown.isPreview($0) ? nil : $0 }
             let verdict = await critic(item.title, markdown)
+            var tagFit: TagFitVerdict?
+            if let tagChecker, let readable, !item.categories.isEmpty {
+                tagFit = await tagChecker(item.title, item.categories, readable)
+            }
             out.append(ComparedStory(id: item.guid, title: item.title, writer: item.creator,
                                      link: item.canonicalLink.absoluteString, published: item.published,
                                      shape: TitleShape.classify(item.title), verdict: verdict,
-                                     signals: readable.map(GenericWriting.signals)))
+                                     signals: readable.map(GenericWriting.signals), tags: item.categories,
+                                     subtitle: readable.flatMap(MetadataAudit.subtitle(fromMarkdown:)),
+                                     articleText: readable, tagFit: tagFit))
         }
         await progress(items.count, items.count)
         return out
@@ -159,10 +177,12 @@ public enum PublicationComparison {
 
     /// Fetches one publication's feed and reads it.
     public static func side(
-        _ choice: PublicationChoice, client: FeedClient = FeedClient(),
+        _ choice: PublicationChoice, client: FeedClient = FeedClient(), checkTags: Bool = false,
         progress: @Sendable (Int, Int) async -> Void = { _, _ in }
     ) async throws -> PublicationSide {
         let items = try await client.fetch(choice.source)
-        return summarize(choice, stories: await read(items, progress: progress))
+        let checker: (@Sendable (String, [String], String) async -> TagFitVerdict)? =
+            checkTags ? { @Sendable in await TagFit.check(title: $0, tags: $1, markdown: $2) } : nil
+        return summarize(choice, stories: await read(items, tagChecker: checker, progress: progress))
     }
 }
