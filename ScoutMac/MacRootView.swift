@@ -15,6 +15,7 @@ enum MacSection: Hashable {
     case lane(String)
     case shortlist
     case issue
+    case compare
     case search
 }
 
@@ -82,6 +83,7 @@ struct MacRootView: View {
             switch tab {
             case .today: section = .lane(model.activeLaneName)
             case .shortlist: section = .shortlist
+            case .compare: section = .compare
             case .search: section = .search
             }
         }
@@ -102,6 +104,8 @@ struct MacRootView: View {
             ShortlistView()
         case .issue:
             MacIssueColumn()
+        case .compare:
+            CompareView()
         case .search:
             SearchView(tag: $searchTag)
         }
@@ -116,6 +120,9 @@ struct MacRootView: View {
             MacIssueColumn()
         case .issue:
             MacIssuePreview()
+        case .compare:
+            ContentUnavailableView("Publication vs publication", systemImage: "chart.bar.xaxis",
+                                   description: Text("Pick two publications and compare them on device."))
         case .search:
             NavigationStack {
                 TagCatalogView { picked in searchTag = searchTag == picked ? nil : picked }
@@ -145,6 +152,7 @@ struct MacRootView: View {
             case "shortlist": return .shortlist
             case "issue": return .issue
             case "search": return .search
+            case "compare": return .compare
             default: break
             }
         }
@@ -194,6 +202,8 @@ struct MacSidebar: View {
                 Label { Text(verbatim: issues.first?.title ?? "Issue") } icon: { Image(systemName: "newspaper") }
                     .badge(issues.first?.entries.count ?? 0)
                     .tag(MacSection.issue)
+                Label("Compare", systemImage: "chart.bar.xaxis")
+                    .tag(MacSection.compare)
                 Label("Search", systemImage: "magnifyingglass")
                     .tag(MacSection.search)
             }

@@ -7,7 +7,7 @@ import Foundation
 import Observation
 
 enum ScoutTab: String, Hashable {
-    case today, shortlist, search
+    case today, shortlist, compare, search
 }
 
 /// Lets App Intents that open the app pick a tab.

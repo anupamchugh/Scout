@@ -53,6 +53,7 @@ struct RootTabs: View {
         TabView(selection: $navigator.tab) {
             Tab("Today", systemImage: "rectangle.stack", value: ScoutTab.today) { TodayView() }
             Tab("Shortlist", systemImage: "checkmark.circle", value: ScoutTab.shortlist) { ShortlistView() }
+            Tab("Compare", systemImage: "chart.bar.xaxis", value: ScoutTab.compare) { CompareView() }
                 .accessibilityIdentifier("tab.shortlist")
             Tab("Search", systemImage: "magnifyingglass", value: ScoutTab.search, role: .search) { SearchView() }
         }
