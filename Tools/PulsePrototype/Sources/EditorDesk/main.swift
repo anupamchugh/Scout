@@ -35,16 +35,19 @@ guard case .available = SystemLanguageModel.default.availability else {
 // MARK: Reader
 
 struct Judged { var group: String; var writer: String; var title: String; var link: String; var published: Date
-                var v: CritiqueVerdict }
+                var v: CritiqueVerdict; var shape: TitleShape; var shapeByModel: Bool; var generic: GenericWritingSignals? }
 
 func read(_ items: [FeedItem], group: String) async -> [Judged] {
     var out: [Judged] = []
     for (n, item) in items.enumerated() {
         let markdown = item.contentHTML.map { HTMLToMarkdown.convert($0) }
+        let readable = markdown.flatMap { HTMLToMarkdown.isPreview($0) ? nil : $0 }
         let v = await StoryCritic.critique(title: item.title, markdown: markdown)
-        print("[\(group) \(n + 1)/\(items.count)] \(v.status.rawValue) \(v.score.map { String(format: "%.2f", $0) } ?? "-") \(item.title.prefix(60)) \(v.problems.joined(separator: "; "))")
+        let shape = (shape: TitleShape.classify(item.title), byModel: false)
+        print("[\(group) \(n + 1)/\(items.count)] \(v.status.rawValue) \(v.score.map { String(format: "%.2f", $0) } ?? "-") \(shape.shape.rawValue)\(shape.byModel ? "*" : "") \(item.title.prefix(60)) \(v.problems.joined(separator: "; "))")
         out.append(Judged(group: group, writer: item.creator, title: item.title, link: item.canonicalLink.absoluteString,
-                          published: item.published, v: v))
+                          published: item.published, v: v, shape: shape.shape, shapeByModel: shape.byModel,
+                          generic: readable.map(GenericWriting.signals)))
     }
     return out
 }
@@ -136,6 +139,53 @@ md.append("|---|---|---|---|---|---|---|---|---|---|")
 md.append(summaryRow("\(slug) (publication feed)", judgedPub))
 md.append(summaryRow("Coffee Bytes writers, active in last 90 days (own feeds, latest \(perWriter) each)", judgedBP))
 md.append("")
+func patternRow(_ name: String, _ js: [Judged]) -> String {
+    let n = Double(max(js.count, 1))
+    func share(_ s: TitleShape) -> String { pct(Double(js.filter { $0.shape == s }.count) / n) }
+    let templates = TitleTemplates.repeated(js.map { ($0.writer, $0.title) })
+    let inTemplates = templates.reduce(0) { $0 + $1.titles.count }
+    let writers = Dictionary(grouping: js, by: \.writer).mapValues(\.count)
+    let topShare = writers.values.max().map { pct(Double($0) / n) } ?? "–"
+    let g = js.compactMap(\.generic)
+    let spec = js.compactMap(\.v.critique).filter { _ in true }
+    let specStrong = spec.isEmpty ? "–" : pct(Double(spec.filter { $0.specificity == .strong }.count) / Double(spec.count))
+    let specWeak = spec.isEmpty ? "–" : pct(Double(spec.filter { $0.specificity == .weak }.count) / Double(spec.count))
+    return "| \(name) | \(js.count) | \(share(.colonSubtitle)) | \(share(.howTo)) | \(share(.listicle)) | \(share(.question)) | \(share(.seriesPart)) | \(pct(Double(inTemplates) / n)) | \(topShare) | \(g.count) | \(f2(mean(g.map(\.stockPerThousandWords)))) | \(pct(mean(g.map(\.repeatedOpeningShare)))) | \(pct(mean(g.map(\.codeLineShare)))) | \(specStrong) / \(specWeak) |"
+}
+
+md.append("## Title formulas and generic-writing signals")
+md.append("")
+md.append("Title shapes and templates cover every story, including member-only ones (titles are public). Prose signals cover only stories whose full text is in the feed. Specificity is the reader's rating of how much of the text is specific to its own case (strong / weak share of judged stories). These are patterns, not verdicts.")
+md.append("")
+md.append("| Group | Titles | Colon subtitle | How-to | Listicle | Question | Series part | In a repeated template | Top writer's share | Readable | Stock phrases per 1k words | Repeated sentence openings | Code lines | Specificity strong / weak |")
+md.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+md.append(patternRow(slug, judgedPub))
+md.append(patternRow("Coffee Bytes writers (active)", judgedBP))
+md.append("")
+for (name, js) in [(slug, judgedPub), ("Coffee Bytes writers", judgedBP)] {
+    let templates = TitleTemplates.repeated(js.map { ($0.writer, $0.title) })
+    let phrases = js.compactMap { j in j.generic.flatMap { $0.stockPhrases.isEmpty ? nil : "\(cell(j.title)): \($0.stockPhrases.joined(separator: ", "))" } }
+    md.append("**\(name).** Repeated templates: \(templates.isEmpty ? "none" : templates.map { "\(cell($0.writer)) ×\($0.titles.count) (\($0.markers.map(\.rawValue).joined(separator: " + ")))" }.joined(separator: "; ")). Stock phrases found: \(phrases.isEmpty ? "none" : phrases.joined(separator: " · ")).")
+    md.append("")
+}
+
+md.append("### Assistant voice")
+md.append("")
+md.append("Code-only counts of the chat-assistant register seen in agent replies (apology and self-correction phrases, \"not X, but Y\" reframes, em dashes, bold spans), after the examples quoted in Jesse Vincent's \"The Therapist Pattern\" (20 Jul 2026). People write this way too; these are things to look at, not proof of how a text was written.")
+md.append("")
+md.append("| Group | Readable | Reframes per 1k words | Em dashes per 1k words | Bold spans per 1k words | Stories with assistant phrases |")
+md.append("|---|---|---|---|---|---|")
+for (name, js) in [(slug, judgedPub), ("Coffee Bytes writers (active)", judgedBP)] {
+    let g = js.compactMap(\.generic)
+    md.append("| \(name) | \(g.count) | \(f2(mean(g.map(\.reframesPerThousandWords)))) | \(f2(mean(g.map(\.emDashesPerThousandWords)))) | \(f2(mean(g.map(\.boldPerThousandWords)))) | \(g.filter { !$0.assistantPhrases.isEmpty }.count) |")
+}
+md.append("")
+for (name, js) in [(slug, judgedPub), ("Coffee Bytes writers", judgedBP)] {
+    let hits = js.compactMap { j in j.generic.flatMap { $0.assistantPhrases.isEmpty ? nil : "\(cell(j.title)): \($0.assistantPhrases.joined(separator: ", "))" } }
+    md.append("**\(name).** Assistant phrases: \(hits.isEmpty ? "none" : hits.joined(separator: " · ")).")
+    md.append("")
+}
+
 md.append("## \(slug): stories")
 md.append("")
 md.append(contentsOf: storyTable(judgedPub))

@@ -39,23 +39,32 @@ public struct StoryCritique: Sendable, Equatable {
     @Guide(description: "Whether claims are backed by code, data, examples or sources in the article")
     public var evidence: CritiqueRating
 
-    @Guide(description: "Whether it offers an angle, example or result that ordinary coverage of the topic lacks")
+    @Guide(description: "strong only for a result, measurement or worked example that ordinary coverage of the topic lacks; most articles are adequate; weak if it restates common explanations")
     public var originality: CritiqueRating
+
+    @Guide(description: "The sentence copied exactly from the article that could most easily appear in any article on this topic")
+    public var genericSentence: String
+
+    @Guide(description: "strong if most of the text is specific to this article's own case, code or data; weak if much of it is filler that could appear in any article on the topic")
+    public var specificity: CritiqueRating
 
     @Guide(description: "One plain sentence under twenty-five words naming the main reason for the ratings. No numbers, no links, no praise words.")
     public var reason: String
 
     public init(evidenceQuote: String, clarity: CritiqueRating, depth: CritiqueRating, evidence: CritiqueRating,
-                originality: CritiqueRating, reason: String) {
+                originality: CritiqueRating, genericSentence: String = "", specificity: CritiqueRating = .adequate,
+                reason: String) {
         self.evidenceQuote = evidenceQuote
         self.clarity = clarity
         self.depth = depth
         self.evidence = evidence
         self.originality = originality
+        self.genericSentence = genericSentence
+        self.specificity = specificity
         self.reason = reason
     }
 
-    /// Mean of the four ratings, 1...3, computed in code.
+    /// Mean of clarity, depth, evidence and originality, 1...3, computed in code. Specificity is reported on its own.
     public var score: Double {
         Double(clarity.points + depth.points + evidence.points + originality.points) / 4
     }
@@ -90,6 +99,10 @@ public enum CritiqueCheck {
         } else if !normalized(articleText).contains(quote) {
             problems.append("evidence quote not found in the article")
         }
+        let generic = normalized(critique.genericSentence)
+        if !generic.isEmpty && !normalized(articleText).contains(generic) {
+            problems.append("generic sentence not found in the article")
+        }
         if critique.reason.contains(where: \.isNumber) { problems.append("reason contains a number") }
         if critique.reason.localizedCaseInsensitiveContains("http") { problems.append("reason contains a link") }
         return problems
@@ -105,8 +118,9 @@ public enum StoryCritic {
     public static let instructions = """
         You are an editor reviewing an article for a programming publication. Rate it on the fixed rubric using \
         only the article text given. First copy one sentence from the article exactly, then rate clarity, depth, \
-        evidence and originality as strong, adequate or weak. Judge the writing, not whether the topic interests \
-        you. Do not reward or punish a topic, language or platform.
+        evidence and originality as strong, adequate or weak. Then copy the article's most generic sentence exactly \
+        and rate how specific the article is overall. Judge the writing, not whether the topic interests you. \
+        Do not reward or punish a topic, language or platform.
         """
 
     /// The article text that fits the on-device context: the opening of the Markdown, trimmed by token count.
