@@ -48,7 +48,8 @@ public struct MetadataAudit: Sendable, Equatable, Codable {
         let titleWords = words(title)
         let textWords = words(articleText ?? "")
         let inTitle = tags.filter { tag in !Set(tag.split(separator: "-").map(String.init)).isDisjoint(with: titleWords) }.count
-        let unmentioned = tags.filter { tag in
+        // Only with the article text: a title alone is too short to say a tag is never mentioned.
+        let unmentioned = articleText == nil ? [] : tags.filter { tag in
             guard let cues = trendingTags[tag] else { return false }
             let seen = titleWords.union(textWords)
             return cues.allSatisfy { !seen.contains($0) }

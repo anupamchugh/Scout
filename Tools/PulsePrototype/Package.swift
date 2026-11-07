@@ -9,5 +9,11 @@ let package = Package(
     name: "PulsePrototype",
     platforms: [.macOS("27.0")],
     dependencies: [.package(path: "../../Packages/ScoutKit")],
-    targets: [.executableTarget(name: "CompareAll", dependencies: ["ScoutKit"])]
+    targets: [
+        .executableTarget(name: "CompareAll", dependencies: ["ScoutKit"]),
+        // LastPosts — a publication's last N posts from its sitemap with topics labelled on device, a full read and tag
+        //             check of the posts its feed carries, and its writers' own feeds where a handle can be verified:
+        //             swift run LastPosts <host> <medium-slug> <report.md>
+        .executableTarget(name: "LastPosts", dependencies: ["ScoutKit"]),
+    ]
 )

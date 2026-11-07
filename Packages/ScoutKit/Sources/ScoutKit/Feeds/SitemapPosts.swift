@@ -1,0 +1,61 @@
+//
+//  SitemapPosts.swift
+//  ScoutKit
+//
+//  A publication's recent posts from its public sitemap. Medium publications list every post in one sitemap file
+//  per day (`/sitemap/posts/<year>/posts-<date>.xml`), so the last 50 posts are reachable even though the RSS feed
+//  holds ten. A sitemap gives each post's link and day only: no writer, tags or text. Titles are rebuilt from the
+//  link's slug, which loses capitals and punctuation.
+//
+
+import Foundation
+
+public struct SitemapPost: Sendable, Hashable, Codable {
+    public var url: URL
+    public var day: String
+    public var slugTitle: String
+}
+
+public enum SitemapPosts {
+
+    /// `<loc>` entries of one day's sitemap.
+    public static func parse(_ xml: String, day: String) -> [SitemapPost] {
+        guard let regex = try? Regex(#"<loc>([^<]+)</loc>"#) else { return [] }
+        return xml.matches(of: regex).compactMap { match -> SitemapPost? in
+            guard let text = match.output[1].substring, let url = URL(string: String(text)) else { return nil }
+            return SitemapPost(url: url, day: day, slugTitle: title(fromSlug: url.lastPathComponent))
+        }
+    }
+
+    /// "mac-terminal-commands-i-use-every-day-built-in-c0131ea3da32" → "Mac terminal commands i use every day built in".
+    public static func title(fromSlug slug: String) -> String {
+        var parts = slug.split(separator: "-").map(String.init)
+        if let last = parts.last, last.count >= 8, last.allSatisfy(\.isHexDigit) { parts.removeLast() }
+        let text = parts.joined(separator: " ")
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
+
+    static func dayString(_ date: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+    }
+
+    /// The newest `count` posts, walking back one day at a time from `newest` for at most `maxDays` days.
+    public static func latest(host: String, count: Int = 50, newest: Date = .now, maxDays: Int = 40,
+                              session: URLSession = .shared) async -> [SitemapPost] {
+        var posts: [SitemapPost] = []
+        for offset in 0..<maxDays where posts.count < count {
+            let day = dayString(newest.addingTimeInterval(-Double(offset) * 86_400))
+            guard let url = URL(string: "https://\(host)/sitemap/posts/\(day.prefix(4))/posts-\(day).xml") else { continue }
+            var request = URLRequest(url: url, timeoutInterval: 15)
+            request.setValue("Scout/1.0", forHTTPHeaderField: "User-Agent")
+            guard let (data, response) = try? await session.data(for: request),
+                  (response as? HTTPURLResponse)?.statusCode == 200,
+                  let xml = String(data: data, encoding: .utf8) else { continue }
+            posts += parse(xml, day: day)
+        }
+        return Array(posts.prefix(count))
+    }
+}

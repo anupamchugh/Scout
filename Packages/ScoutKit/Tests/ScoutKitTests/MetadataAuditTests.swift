@@ -25,6 +25,12 @@ struct MetadataAuditTests {
         #expect(audit.tagsInTitle == 1)
     }
 
+    @Test func previewsWithoutTextAreNotFlagged() {
+        let audit = MetadataAudit.audit(title: "Iterator Pattern in .NET C#", tags: ["programming", "dotnet"],
+                                        subtitle: nil, articleText: nil)
+        #expect(audit.trendingTagsUnmentioned.isEmpty)
+    }
+
     @Test func genericSubtitlesAreNamed() {
         let generic = MetadataAudit.audit(title: "DTW", tags: [],
                                           subtitle: "The article contains an understanding of the DTW algorithm.", articleText: nil)
