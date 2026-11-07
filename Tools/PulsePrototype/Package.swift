@@ -18,5 +18,8 @@ let package = Package(
         // MonthReport — every preset publication's last 30 days from its sitemap, topics labelled on device:
         //               swift run MonthReport <report.md>
         .executableTarget(name: "MonthReport", dependencies: ["ScoutKit"]),
+        // Originality — title originality over each publication's last 30 days from Natural Language embeddings:
+        //               swift run Originality <report.md>
+        .executableTarget(name: "Originality", dependencies: ["ScoutKit"]),
     ]
 )

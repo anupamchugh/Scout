@@ -29,21 +29,13 @@ let sampleSize = 150
 let now = Date.now
 let cutoff = SitemapPosts.day(now.addingTimeInterval(-30 * 86_400))
 
-func fetchSingle(_ host: String) async -> [SitemapPost] {
-    guard let url = URL(string: "https://\(host)/sitemap/sitemap.xml") else { return [] }
-    var request = URLRequest(url: url, timeoutInterval: 60)
-    request.setValue("Scout/1.0", forHTTPHeaderField: "User-Agent")
-    guard let (data, _) = try? await URLSession.shared.data(for: request), let xml = String(data: data, encoding: .utf8) else { return [] }
-    return SitemapPosts.parseSingle(xml)
-}
-
 struct Result { var pub: Pub; var posts: [SitemapPost]; var topics: [PostTopic?]; var labelled: Int }
 var results: [Result] = []
 for pub in pubs {
     var posts: [SitemapPost] = []
     switch pub.method {
     case .daily: posts = await SitemapPosts.latest(host: pub.host, count: .max, newest: now, maxDays: 30)
-    case .lastModified: posts = await fetchSingle(pub.host).filter { $0.day >= cutoff }.sorted { $0.day > $1.day }
+    case .lastModified: posts = await SitemapPosts.single(host: pub.host).filter { $0.day >= cutoff }.sorted { $0.day > $1.day }
     case .none: break
     }
     let sample = Array(posts.prefix(sampleSize))

@@ -48,6 +48,23 @@ public enum SitemapPosts {
         return text.prefix(1).uppercased() + text.dropFirst()
     }
 
+    /// A custom-domain publication's single sitemap (`/sitemap/sitemap.xml`), parsed with `parseSingle`.
+    public static func single(host: String, session: URLSession = .shared) async -> [SitemapPost] {
+        guard let url = URL(string: "https://\(host)/sitemap/sitemap.xml") else { return [] }
+        var request = URLRequest(url: url, timeoutInterval: 60)
+        request.setValue("Scout/1.0", forHTTPHeaderField: "User-Agent")
+        guard let (data, response) = try? await session.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let xml = String(data: data, encoding: .utf8) else { return [] }
+        return unique(parseSingle(xml))
+    }
+
+    /// One entry per post link, keeping the first (newest day) — a post can appear in more than one day's sitemap.
+    public static func unique(_ posts: [SitemapPost]) -> [SitemapPost] {
+        var seen = Set<URL>()
+        return posts.filter { seen.insert($0.url).inserted }
+    }
+
     /// A date as a sitemap day ("2026-11-06", UTC).
     public static func day(_ date: Date) -> String { dayString(date) }
 
@@ -72,6 +89,6 @@ public enum SitemapPosts {
                   let xml = String(data: data, encoding: .utf8) else { continue }
             posts += parse(xml, day: day)
         }
-        return Array(posts.prefix(count))
+        return Array(unique(posts).prefix(count))
     }
 }

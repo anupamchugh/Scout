@@ -31,6 +31,14 @@ struct SitemapPostsTests {
         #expect(posts[0].slugTitle == "Karpenter idle nodes")
     }
 
+    @Test func uniqueKeepsTheFirstEntryPerLink() {
+        let xml = "<loc>https://e.com/a-1a2b3c4d5e6f</loc><loc>https://e.com/b-2a2b3c4d5e6f</loc>"
+        let posts = SitemapPosts.parse(xml, day: "2026-11-06") + SitemapPosts.parse(xml, day: "2026-11-05")
+        let unique = SitemapPosts.unique(posts)
+        #expect(unique.count == 2)
+        #expect(unique.allSatisfy { $0.day == "2026-11-06" })
+    }
+
     @Test func keepsSlugsWithoutAnIdSuffix() {
         #expect(SitemapPosts.title(fromSlug: "hello-world") == "Hello world")
     }
