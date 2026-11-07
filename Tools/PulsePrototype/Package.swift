@@ -12,5 +12,8 @@ let package = Package(
     targets: [
         .executableTarget(name: "PulsePrototype", dependencies: ["ScoutKit"]),
         .executableTarget(name: "EditorDesk", dependencies: ["ScoutKit"]),
+        // CompareAll — every preset publication through ScoutKit's PublicationComparison (the Compare tab's
+        //              engine), with good/bad slop buckets and readability, as one Markdown report.
+        .executableTarget(name: "CompareAll", dependencies: ["ScoutKit"]),
     ]
 )

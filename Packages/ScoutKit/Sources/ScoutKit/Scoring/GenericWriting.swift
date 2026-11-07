@@ -27,6 +27,8 @@ public struct GenericWritingSignals: Sendable, Equatable, Codable {
     public var emDashesPerThousandWords: Double = 0
     /// Bold spans (**…**) per thousand words of prose.
     public var boldPerThousandWords: Double = 0
+    /// Sentence length and Flesch reading ease of the prose.
+    public var readability: Readability? = nil
 }
 
 public enum GenericWriting {
@@ -98,6 +100,7 @@ public enum GenericWriting {
             assistantPhrases: assistant,
             reframesPerThousandWords: perThousand(reframes),
             emDashesPerThousandWords: perThousand(emDashes),
-            boldPerThousandWords: perThousand(bold))
+            boldPerThousandWords: perThousand(bold),
+            readability: Readability.measure(text.replacingOccurrences(of: "**", with: "")))
     }
 }
