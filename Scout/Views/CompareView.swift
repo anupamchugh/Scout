@@ -62,7 +62,6 @@ struct CompareView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     pickers
@@ -105,13 +104,7 @@ struct CompareView: View {
                 #if DEBUG
                 let args = ProcessInfo.processInfo.arguments
                 if args.contains("-compareRun") { await compare.run() }
-                // Screenshots without taps: -compareScroll <anchor> (second, signals, stories).
-                if let i = args.firstIndex(of: "-compareScroll"), i + 1 < args.count {
-                    try? await Task.sleep(for: .milliseconds(400))
-                    withAnimation { proxy.scrollTo(args[i + 1], anchor: .top) }
-                }
                 #endif
-            }
             }
         }
     }
@@ -130,17 +123,14 @@ struct CompareView: View {
     @ViewBuilder
     private var results: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 12) { sideCard(compare.sideA, compare.a); sideCard(compare.sideB, compare.b).id("second") }
-            VStack(spacing: 12) { sideCard(compare.sideA, compare.a); sideCard(compare.sideB, compare.b).id("second") }
+            HStack(alignment: .top, spacing: 12) { sideCard(compare.sideA, compare.a); sideCard(compare.sideB, compare.b) }
+            VStack(spacing: 12) { sideCard(compare.sideA, compare.a); sideCard(compare.sideB, compare.b) }
         }
         if let a = compare.sideA, let b = compare.sideB {
-            SignalsTable(a: a, b: b).id("signals")
-            VStack(spacing: 20) {
-                ForEach([a, b], id: \.choice.key) { side in
-                    if let story = side.topStory { TopStoryCard(side: side, story: story) }
-                }
+            SignalsTable(a: a, b: b)
+            ForEach([a, b], id: \.choice.key) { side in
+                if let story = side.topStory { TopStoryCard(side: side, story: story) }
             }
-            .id("stories")
             Text("A feed carries about ten recent posts, so each side describes those posts only. Member-only posts show a preview and are not judged. The rubric has not been measured against an editor’s decisions; these are patterns, not verdicts.")
                 .font(.footnote).foregroundStyle(Color.inkSecondary)
         }
