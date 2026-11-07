@@ -2,13 +2,14 @@
 //
 //  swift run EditorDesk <pulse.json> <publication-slug> <report.md> [--per-writer 3]
 //
-//  Reader:     WritingCorpus's CurationJudge rates each article (theme fit, novelty, quality, one reason) on device.
+//  Reader:     ScoutKit's StoryCritic fills a neutral @Generable rubric (clarity, depth, evidence, originality as
+//              strong / adequate / weak, plus a quote and a reason) on device; CritiqueCheck verifies the quote.
 //  Trajectory: code compares each writer's older and newer posts (length, code share, tags, gap between posts).
-//  Editor:     code writes the report; the only model text in it is each article's one-line reason.
-//  The judge's agreement with the owner's past decisions is printed in the report, because it is weak.
+//  Editor:     code writes the report; the only model text in it is each article's quote and one-line reason.
+//  No owner taste profile is used, and this rubric has not yet been measured against editorial decisions.
 
-import CurationJudge
 import Foundation
+import FoundationModels
 import ScoutKit
 
 // MARK: Inputs
@@ -27,28 +28,23 @@ let pulse = try decoder.decode(PulseFile.self, from: Data(contentsOf: URL(fileUR
 let slug = args[2]
 let perWriter = args.firstIndex(of: "--per-writer").flatMap { Int(args[$0 + 1]) } ?? 3
 
-let corpusURL = URL(fileURLWithPath: NSString("~/Desktop/workspace/WritingCorpus/corpus").expandingTildeInPath)
-let profile = try OwnerProfile.load(corpus: try CorpusIndex.load(directory: corpusURL))
-let model = AppleCurationModel()
-if let problem = model.availabilityProblem { print("on-device model unavailable: \(problem)"); exit(2) }
-let judge = CurationJudge(model: model, profile: profile)
+guard case .available = SystemLanguageModel.default.availability else {
+    print("on-device model unavailable: \(SystemLanguageModel.default.availability)"); exit(2)
+}
 
 // MARK: Reader
 
 struct Judged { var group: String; var writer: String; var title: String; var link: String; var published: Date
-                var j: ItemJudgement }
+                var v: CritiqueVerdict }
 
 func read(_ items: [FeedItem], group: String) async -> [Judged] {
     var out: [Judged] = []
     for (n, item) in items.enumerated() {
         let markdown = item.contentHTML.map { HTMLToMarkdown.convert($0) }
-        let text = markdown.flatMap { HTMLToMarkdown.isPreview($0) ? nil : $0 }
-        let corpusItem = CorpusItem(id: item.guid, kind: "post", title: item.title, url: item.canonicalLink.absoluteString,
-                                    words: text.map { $0.split(whereSeparator: \.isWhitespace).count })
-        let j = await judge.judge(item: corpusItem, text: text)
-        print("[\(group) \(n + 1)/\(items.count)] \(j.status.rawValue) \(j.composite.map { String(format: "%.2f", $0) } ?? "-") \(item.title.prefix(60))")
+        let v = await StoryCritic.critique(title: item.title, markdown: markdown)
+        print("[\(group) \(n + 1)/\(items.count)] \(v.status.rawValue) \(v.score.map { String(format: "%.2f", $0) } ?? "-") \(item.title.prefix(60)) \(v.problems.joined(separator: "; "))")
         out.append(Judged(group: group, writer: item.creator, title: item.title, link: item.canonicalLink.absoluteString,
-                          published: item.published, j: j))
+                          published: item.published, v: v))
     }
     return out
 }
@@ -100,15 +96,25 @@ func f2(_ d: Double?) -> String { d.map { String(format: "%.2f", $0) } ?? "–" 
 func pct(_ d: Double?) -> String { d.map { "\(Int(($0 * 100).rounded()))%" } ?? "–" }
 func cell(_ s: String) -> String { s.replacingOccurrences(of: "|", with: "/").replacingOccurrences(of: "\n", with: " ") }
 
-func summaryRow(_ name: String, _ js: [Judged]) -> String {
-    let scored = js.filter { $0.j.status == .scored }
-    return "| \(name) | \(js.count) | \(scored.count) | \(f2(mean(scored.compactMap(\.j.composite)))) | \(f2(mean(scored.compactMap(\.j.quality)))) | \(f2(mean(scored.compactMap(\.j.novelty)))) | \(f2(mean(scored.compactMap(\.j.themeFit)))) |"
+func strongShare(_ js: [Judged], _ key: KeyPath<StoryCritique, CritiqueRating>) -> String {
+    let c = js.compactMap(\.v.critique)
+    return c.isEmpty ? "–" : pct(Double(c.filter { $0[keyPath: key] == .strong }.count) / Double(c.count))
 }
+func summaryRow(_ name: String, _ js: [Judged]) -> String {
+    let scored = js.filter { $0.v.status == .scored }
+    let flagged = js.filter { $0.v.status == .flagged }.count
+    let preview = js.filter { $0.v.status == .previewOnly }.count
+    return "| \(name) | \(js.count) | \(scored.count) | \(flagged) | \(preview) | \(f2(mean(scored.compactMap(\.v.score)))) | \(strongShare(scored, \.clarity)) | \(strongShare(scored, \.depth)) | \(strongShare(scored, \.evidence)) | \(strongShare(scored, \.originality)) |"
+}
+func letter(_ r: CritiqueRating?) -> String { r.map { String($0.rawValue.prefix(1)).uppercased() } ?? "–" }
 func storyTable(_ js: [Judged]) -> [String] {
-    var rows = ["| Composite | Q | N | Fit | Writer | Story | Reader's reason (on-device model) |", "|---|---|---|---|---|---|---|"]
-    for x in js.sorted(by: { ($0.j.composite ?? -1) > ($1.j.composite ?? -1) }) {
-        let status = x.j.status == .scored ? f2(x.j.composite) : x.j.status.rawValue
-        rows.append("| \(status) | \(f2(x.j.quality)) | \(f2(x.j.novelty)) | \(f2(x.j.themeFit)) | \(cell(x.writer)) | [\(cell(x.title))](\(x.link)) | \(cell(x.j.reason ?? x.j.detail ?? "")) |")
+    var rows = ["| Score | C·D·E·O | Writer | Story | Quote the reader chose | Reader's reason (on-device model) |",
+                "|---|---|---|---|---|---|"]
+    for x in js.sorted(by: { ($0.v.score ?? -1) > ($1.v.score ?? -1) }) {
+        let c = x.v.critique
+        let status = x.v.status == .scored ? f2(x.v.score) : x.v.status.rawValue
+        let note = x.v.status == .scored ? (c?.reason ?? "") : x.v.problems.joined(separator: "; ")
+        rows.append("| \(status) | \(letter(c?.clarity))·\(letter(c?.depth))·\(letter(c?.evidence))·\(letter(c?.originality)) | \(cell(x.writer)) | [\(cell(x.title))](\(x.link)) | \(cell(c.map { "“\($0.evidenceQuote)”" } ?? "")) | \(cell(note)) |")
     }
     return rows
 }
@@ -117,14 +123,16 @@ let dayFmt = DateFormatter(); dayFmt.dateFormat = "d MMM yyyy"
 var md: [String] = []
 md.append("# Editor desk: \(slug) vs Coffee Bytes writers")
 md.append("")
-md.append("Generated \(dayFmt.string(from: .now)) on this Mac. Scores come from WritingCorpus's CurationJudge on Apple's on-device model (1–5 scales; composite weights theme fit 0.40, quality 0.35, novelty 0.25, set in code). Every average, count and trajectory below is computed in code. The only model-written text is each story's one-line reason.")
+md.append("Generated \(dayFmt.string(from: .now)) on this Mac. Each article was read by ScoutKit's `StoryCritic` on Apple's on-device model with one neutral rubric for everyone: clarity, depth, evidence and originality, each strong (3), adequate (2) or weak (1). The model must first copy a sentence from the article; code checks that sentence is really there and flags the read if not. Scores, shares, counts and trajectories are computed in code. No personal taste profile is used.")
 md.append("")
-md.append("> **Read this first.** On your 24 labelled Better Programming decisions the judge ranked an accepted piece above a passed one 62% of the time (AUC 0.62; 0.65 without examples, 0.47 with four examples; 50% is a coin flip). Treat scores as a hint, not a curation verdict. Source: `WritingCorpus/REPORT.md`, 4 Nov 2026.")
+md.append("> **Read this first.** This rubric has not yet been measured against your editorial decisions. Scores describe the writing as one on-device model reads it; they are not a curation verdict.")
 md.append("")
 md.append("## Summary")
 md.append("")
-md.append("| Group | Stories | Scored | Composite | Quality | Novelty | Theme fit |")
-md.append("|---|---|---|---|---|---|---|")
+md.append("Score is the mean of the four ratings (1–3) over scored stories; the strong columns are the share of scored stories rated strong.")
+md.append("")
+md.append("| Group | Stories | Scored | Flagged | Preview only | Score | Clarity strong | Depth strong | Evidence strong | Originality strong |")
+md.append("|---|---|---|---|---|---|---|---|---|---|")
 md.append(summaryRow("\(slug) (publication feed)", judgedPub))
 md.append(summaryRow("Coffee Bytes writers, active in last 90 days (own feeds, latest \(perWriter) each)", judgedBP))
 md.append("")
@@ -155,7 +163,8 @@ md.append("")
 md.append("- \(slug) is a single publication feed: its latest ~10 posts, often from one day. It is not a trend.")
 md.append("- Coffee Bytes writers are the 148 Medium handles linked from the owner's 31 Coffee Bytes issues (Jun 2022 onward), read through their own feeds. Most no longer post; only active writers are judged here.")
 md.append("- \(slug) writers mostly have no Medium handle in their links (custom domain), so their trajectories are not available.")
-md.append("- Member-only posts carry a preview in feeds; those are marked unknown, not scored.")
+md.append("- Member-only posts carry a preview in feeds; those are marked preview only, not scored.")
+md.append("- Long articles are judged on their opening, trimmed to fit the on-device context window.")
 md.append("- No story was fetched from a web page; Medium pages refuse automated reads, so only RSS text was used.")
 md.append("- The two groups differ in time, topic and selection; differences in averages describe these samples only.")
 
