@@ -154,5 +154,13 @@ struct ScoutShortcuts: AppShortcutsProvider {
         AppShortcut(intent: ShowShortlistIntent(),
                     phrases: ["Show my shortlist in \(.applicationName)", "Open my \(.applicationName) shortlist"],
                     shortTitle: "Shortlist", systemImageName: "checkmark.circle")
+        AppShortcut(intent: CheckPublicationsIntent(),
+                    phrases: ["Check programming publications in \(.applicationName)",
+                              "What's new in programming publications in \(.applicationName)"],
+                    shortTitle: "Publications", systemImageName: "newspaper")
+        AppShortcut(intent: CheckPublicationSlopIntent(),
+                    phrases: ["Check \(\.$publication) for slop in \(.applicationName)",
+                              "Is \(\.$publication) slop in \(.applicationName)"],
+                    shortTitle: "Slop Check", systemImageName: "chart.bar.xaxis")
     }
 }

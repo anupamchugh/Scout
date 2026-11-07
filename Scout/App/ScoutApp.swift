@@ -42,19 +42,40 @@ struct RootTabs: View {
         if ProcessInfo.processInfo.arguments.contains("-siriCardStage") {
             SiriCardStage()
         } else {
-            tabs
+            tabs.task { await Self.runIntentFromArguments() }
         }
         #else
         tabs
         #endif
     }
 
+    #if DEBUG
+    /// -runIntent publications | slop:<publication key>: runs what the Siri intent runs and prints what Siri would say.
+    private static func runIntentFromArguments() async {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-runIntent"), i + 1 < args.count else { return }
+        let request = args[i + 1]
+        let text: String
+        if request == "publications" {
+            text = await CheckPublicationsIntent.briefing()
+        } else if request.hasPrefix("slop:"), let publication = ProgrammingPublication(rawValue: String(request.dropFirst(5))) {
+            text = (try? await CheckPublicationSlopIntent.report(publication)) ?? "failed"
+        } else {
+            text = "unknown request \(request)"
+        }
+        print("SIRI-DIALOG[\(request)]: \(text)")
+        let file = URL.documentsDirectory.appending(path: "siri-dialog-\(request.replacingOccurrences(of: ":", with: "-")).txt")
+        try? text.write(to: file, atomically: true, encoding: .utf8)
+    }
+    #endif
+
     private var tabs: some View {
         TabView(selection: $navigator.tab) {
             Tab("Today", systemImage: "rectangle.stack", value: ScoutTab.today) { TodayView() }
             Tab("Shortlist", systemImage: "checkmark.circle", value: ScoutTab.shortlist) { ShortlistView() }
-            Tab("Compare", systemImage: "chart.bar.xaxis", value: ScoutTab.compare) { CompareView() }
                 .accessibilityIdentifier("tab.shortlist")
+            Tab("Compare", systemImage: "chart.bar.xaxis", value: ScoutTab.compare) { CompareView() }
+                .accessibilityIdentifier("tab.compare")
             Tab("Search", systemImage: "magnifyingglass", value: ScoutTab.search, role: .search) { SearchView() }
         }
     }
