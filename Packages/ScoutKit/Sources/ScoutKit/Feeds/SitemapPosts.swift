@@ -27,6 +27,19 @@ public enum SitemapPosts {
         }
     }
 
+    /// A single-file sitemap (custom-domain publications such as itnext.io): post entries only, dated by `<lastmod>`,
+    /// which is the last edit, not the publish day. Tag pages and links without a Medium post id are skipped.
+    public static func parseSingle(_ xml: String) -> [SitemapPost] {
+        guard let regex = try? Regex(#"<url><loc>([^<]+)</loc><lastmod>([0-9-]{10})"#) else { return [] }
+        return xml.matches(of: regex).compactMap { match -> SitemapPost? in
+            guard let loc = match.output[1].substring, let day = match.output[2].substring,
+                  let url = URL(string: String(loc)), !url.path.hasPrefix("/tagged"),
+                  let id = url.lastPathComponent.split(separator: "-").last, id.count >= 8, id.allSatisfy(\.isHexDigit)
+            else { return nil }
+            return SitemapPost(url: url, day: String(day), slugTitle: title(fromSlug: url.lastPathComponent))
+        }
+    }
+
     /// "mac-terminal-commands-i-use-every-day-built-in-c0131ea3da32" → "Mac terminal commands i use every day built in".
     public static func title(fromSlug slug: String) -> String {
         var parts = slug.split(separator: "-").map(String.init)
@@ -34,6 +47,9 @@ public enum SitemapPosts {
         let text = parts.joined(separator: " ")
         return text.prefix(1).uppercased() + text.dropFirst()
     }
+
+    /// A date as a sitemap day ("2026-11-06", UTC).
+    public static func day(_ date: Date) -> String { dayString(date) }
 
     static func dayString(_ date: Date) -> String {
         var calendar = Calendar(identifier: .gregorian)

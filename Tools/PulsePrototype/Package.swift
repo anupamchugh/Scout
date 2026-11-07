@@ -15,5 +15,8 @@ let package = Package(
         //             check of the posts its feed carries, and its writers' own feeds where a handle can be verified:
         //             swift run LastPosts <host> <medium-slug> <report.md>
         .executableTarget(name: "LastPosts", dependencies: ["ScoutKit"]),
+        // MonthReport — every preset publication's last 30 days from its sitemap, topics labelled on device:
+        //               swift run MonthReport <report.md>
+        .executableTarget(name: "MonthReport", dependencies: ["ScoutKit"]),
     ]
 )

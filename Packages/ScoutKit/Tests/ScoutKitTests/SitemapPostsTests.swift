@@ -19,6 +19,18 @@ struct SitemapPostsTests {
         #expect(posts.allSatisfy { $0.day == "2026-11-06" })
     }
 
+    @Test func singleSitemapKeepsPostsAndSkipsTagPages() {
+        let xml = """
+            <urlset><url><loc>https://itnext.io/tagged/linux</loc><lastmod>2026-11-02</lastmod></url>\
+            <url><loc>https://itnext.io/karpenter-idle-nodes-1a2b3c4d5e6f</loc><lastmod>2026-11-06</lastmod><changefreq>daily</changefreq></url>\
+            <url><loc>https://itnext.io/about</loc><lastmod>2026-01-01</lastmod></url></urlset>
+            """
+        let posts = SitemapPosts.parseSingle(xml)
+        #expect(posts.count == 1)
+        #expect(posts[0].day == "2026-11-06")
+        #expect(posts[0].slugTitle == "Karpenter idle nodes")
+    }
+
     @Test func keepsSlugsWithoutAnIdSuffix() {
         #expect(SitemapPosts.title(fromSlug: "hello-world") == "Hello world")
     }
