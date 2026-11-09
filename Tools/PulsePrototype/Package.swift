@@ -21,5 +21,8 @@ let package = Package(
         // Originality — title originality over each publication's last 30 days from Natural Language embeddings:
         //               swift run Originality <report.md>
         .executableTarget(name: "Originality", dependencies: ["ScoutKit"]),
+        // SlopLabelSet — readable feed articles into an editor label set for SlopRubricEvaluation:
+        //                swift run SlopLabelSet [label-set folder]
+        .executableTarget(name: "SlopLabelSet", dependencies: ["ScoutKit"]),
     ]
 )

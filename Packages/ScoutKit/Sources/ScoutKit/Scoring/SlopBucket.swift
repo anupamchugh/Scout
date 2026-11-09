@@ -23,10 +23,14 @@ public enum SlopBucket: String, Sendable, Codable, CaseIterable {
         templated || [.listicle, .colonSubtitle, .howTo].contains(shape)
     }
 
+    /// Substance is solid when the rubric mean is at least `solidScore` and specificity is not weak.
+    public static func solid(_ critique: StoryCritique) -> Bool {
+        critique.score >= solidScore && critique.specificity != .weak
+    }
+
     public static func classify(shape: TitleShape, templated: Bool, verdict: CritiqueVerdict) -> SlopBucket {
         guard verdict.status == .scored, let critique = verdict.critique else { return .unknown }
-        let solid = critique.score >= solidScore && critique.specificity != .weak
-        switch (formulaic(shape, templated: templated), solid) {
+        switch (formulaic(shape, templated: templated), solid(critique)) {
         case (false, true): return .plainSolid
         case (true, true): return .goodSlop
         case (true, false): return .badSlop
