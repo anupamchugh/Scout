@@ -24,5 +24,8 @@ let package = Package(
         // SlopLabelSet — readable feed articles into an editor label set for SlopRubricEvaluation:
         //                swift run SlopLabelSet [label-set folder]
         .executableTarget(name: "SlopLabelSet", dependencies: ["ScoutKit"]),
+        // LastWeek — a publication's last 7 days: sitemap count, writers and cadence, titles, subtitles and tags from
+        //            its per-tag feeds: swift run LastWeek <host> <medium-slug> <report.md> [days]
+        .executableTarget(name: "LastWeek", dependencies: ["ScoutKit"]),
     ]
 )
