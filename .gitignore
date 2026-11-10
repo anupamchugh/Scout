@@ -7,3 +7,7 @@ build/
 
 # Videos over GitHub's 100 MB limit stay local
 screenshots/2026-11-05/scout-walkthrough.mp4
+
+# Beads ledger (local only)
+.beads/
+.beads.gate.lock
